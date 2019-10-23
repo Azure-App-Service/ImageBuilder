@@ -54,6 +54,18 @@ else
     fi
 fi
 
+debugArgs=""
+if [ "$APPSVC_REMOTE_DEBUGGING" == "TRUE" ]; then
+    echo "App will launch in debug mode"
+    debugArgs="-debugAdapter ptvsd -debugPort $APPSVC_TUNNEL_PORT"
+
+    if [ "$APPSVC_REMOTE_DEBUGGING_BREAK" == "TRUE" ]; then
+        debugArgs+=" -debugWait"
+    fi
+
+    oryxArgs="$debugArgs $oryxArgs"
+fi
+
 echo "Launching oryx with: $oryxArgs"
 #invoke oryx to generate startup script
 eval "oryx $oryxArgs"

@@ -19,14 +19,11 @@ cat /etc/motd
 sed -i "s/SSH_PORT/$SSH_PORT/g" /etc/ssh/sshd_config
 service ssh start
 
-
 # Get environment variables to show up in SSH session
 eval $(printenv | sed -n "s/^\([^=]\+\)=\(.*\)$/export \1=\2/p" | sed 's/"/\\\"/g' | sed '/=/s//="/' | sed 's/$/"/' >> /etc/profile)
 
 echo "$@" > /opt/startup/startupCommand
 chmod 755 /opt/startup/startupCommand
-
-#oryx startup script generator
 
 oryxArgs='-appPath /home/site/wwwroot -output /opt/startup/startup.sh -virtualEnvName antenv -defaultApp /opt/defaultsite'
 if [ $# -eq 0 ]; then
@@ -55,6 +52,18 @@ else
     else
        oryxArgs+=" -userStartupCommand '$@'"
     fi
+fi
+
+debugArgs=""
+if [ "$APPSVC_REMOTE_DEBUGGING" == "TRUE" ]; then
+    echo "App will launch in debug mode"
+    debugArgs="-debugAdapter ptvsd -debugPort $APPSVC_TUNNEL_PORT"
+
+    if [ "$APPSVC_REMOTE_DEBUGGING_BREAK" == "TRUE" ]; then
+        debugArgs+=" -debugWait"
+    fi
+
+    oryxArgs="$debugArgs $oryxArgs"
 fi
 
 echo "Launching oryx with: $oryxArgs"

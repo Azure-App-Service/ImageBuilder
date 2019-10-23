@@ -12,6 +12,10 @@ RUN apt-get update \
         curl \
         wget \
         tcptraceroute \
+        net-tools \
+        dnsutils \
+        tcpdump \
+        iproute2 \
     && pip install --upgrade pip \
     && pip install subprocess32 \
     && pip install gunicorn \ 
@@ -28,7 +32,7 @@ ENV SSH_PORT 2222
 RUN mkdir -p /home/LogFiles \
      && echo "root:Docker!" | chpasswd \
      && echo "cd /home" >> /root/.bashrc 
-
+     
 COPY sshd_config /etc/ssh/
 RUN mkdir -p /opt/startup
 COPY init_container.sh /opt/startup/init_container.sh
@@ -36,6 +40,7 @@ COPY init_container.sh /opt/startup/init_container.sh
 # setup default site
 RUN mkdir /opt/defaultsite
 COPY hostingstart.html /opt/defaultsite
+COPY hostingstart_dep.html /opt/defaultsite
 COPY application.py /opt/defaultsite
 
 # configure startup

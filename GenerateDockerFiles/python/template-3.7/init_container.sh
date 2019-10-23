@@ -25,7 +25,6 @@ eval $(printenv | sed -n "s/^\([^=]\+\)=\(.*\)$/export \1=\2/p" | sed 's/"/\\\"/
 echo "$@" > /opt/startup/startupCommand
 chmod 755 /opt/startup/startupCommand
 
-#oryx startup script generator
 oryxArgs="-appPath /home/site/wwwroot -output /opt/startup/startup.sh -virtualEnvName antenv -defaultApp /opt/defaultsite -bindPort $PORT"
 if [ $# -eq 0 ]; then
     echo 'App Command Line not configured, will attempt auto-detect'
@@ -53,6 +52,18 @@ else
     else
        oryxArgs+=" -userStartupCommand '$@'"
     fi
+fi
+
+debugArgs=""
+if [ "$APPSVC_REMOTE_DEBUGGING" == "TRUE" ]; then
+    echo "App will launch in debug mode"
+    debugArgs="-debugAdapter ptvsd -debugPort $APPSVC_TUNNEL_PORT"
+
+    if [ "$APPSVC_REMOTE_DEBUGGING_BREAK" == "TRUE" ]; then
+        debugArgs+=" -debugWait"
+    fi
+
+    oryxArgs="$debugArgs $oryxArgs"
 fi
 
 echo "Launching oryx with: $oryxArgs"
