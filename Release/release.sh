@@ -31,7 +31,7 @@ function tagACRImagesToDockerHub()
                 # Tag images from APP_SVC_DEV_ACR to APP_SVC_MCR_REPO
                 local imageName="${STACK}:${TAG}"
                 local acrImage="${APP_SVC_DEV_ACR}/${imageName}"
-                local mcrImage="${APP_SVC_MCR_REPO}/public/${imageName}"
+                local mcrImage="${APP_SVC_MCR_REPO}/public/appsvc/${imageName}"
                 echo "Pulling from test acr. Image: $acrImage"
                 docker pull ${acrImage}
                 echo "Tagging image test image to prod ACR"

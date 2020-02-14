@@ -43,7 +43,7 @@ jobs:
             az acr repository show-tags -n appsvcdevacr --repository $repo -o tsv > $(System.DefaultWorkingDirectory)/tags/$repo
           done
   - task: ShellScript@2
-    displayName: 'Push approved images from AppSvcDevACR to appsvctest'
+    displayName: 'Push approved images from AppSvcDevACR to WAWSImages'
     inputs:
       scriptPath: ./Release/release.sh
       args: $(System.DefaultWorkingDirectory)
