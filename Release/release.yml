@@ -14,16 +14,17 @@ jobs:
   timeoutInMinutes: 100
   steps:
   - task: Docker@1
-    displayName: ACR login
+    displayName: Dev ACR login
     inputs:
       command: login
       azureSubscriptionEndpoint: AppSvcDevACR
       azureContainerRegistry: appsvcdevacr.azurecr.io
-  - task: Docker@2
-    displayName: DockerHub login
+  - task: Docker@1
+    displayName: WAWS Container Images ACR login
     inputs:
       command: login
-      containerRegistry: App Svc Test Docker Hub
+      azureSubscriptionEndpoint:  WAWS_Container_Images
+      azureContainerRegistry: wawsimages.azurecr.io
   - task: AzureCLI@2
     displayName: Azure CLI
     inputs:
@@ -46,5 +47,4 @@ jobs:
     inputs:
       scriptPath: ./Release/release.sh
       args: $(System.DefaultWorkingDirectory)
-
 trigger: none

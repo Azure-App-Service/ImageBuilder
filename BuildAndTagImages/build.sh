@@ -28,35 +28,33 @@ function buildDockerImage()
             for TAG in "${STACK_TAGS_ARR[@]}"
             do
                 # Build Image Tags are converted to lower case because docker doesn't accept upper case tags
-                local AppSvcTagUpperCaseDocker="${APP_SVC_BRANCH_PREFIX}/${STACK}:${TAG}"
-                local AppSvcTagDocker="${AppSvcTagUpperCaseDocker,,}"
                 local TestRepoTagUpperCase="${TEST_IMAGE_REPO_NAME}/${STACK}:${TAG}_${PIPELINE_BUILD_NUMBER}"
                 local TestRepoTag="${TestRepoTagUpperCase,,}"
                 local appSvcDockerfilePath="${SYSTEM_ARTIFACTS_DIR}/${STACK}/GitRepo/${STACK_VERSION}/Dockerfile" 
-                echo "Listing artifacts dir"
+                
+		echo "Listing artifacts dir"
                 ls "${SYSTEM_ARTIFACTS_DIR}"
                 echo "Listing stacks dir"
                 ls "${SYSTEM_ARTIFACTS_DIR}/${STACK}/GitRepo/${STACK_VERSION}"
                 cd "${SYSTEM_ARTIFACTS_DIR}/${STACK}/GitRepo/${STACK_VERSION}"
+
                 echo
                 echo "Building test image with tag '$TestRepoTag' and file $appSvcDockerfilePath..."
                 echo docker build -t "$TestRepoTag" -f "$appSvcDockerfilePath" .
                 docker build -t "$TestRepoTag" -f "$appSvcDockerfilePath" .
+
                 if [ "$BUILD_REASON" != "PullRequest" ]; then
                     docker push $TestRepoTag
                 fi
+
                 echo $TestRepoTag > $SYSTEM_ARTIFACTS_DIR/builtImageList
-                echo "Pushing test image to $AppSvcTagDocker"
-                docker tag $TestRepoTag $AppSvcTagDocker
-                if [ "$BUILD_REASON" != "PullRequest" ]; then
-                    docker push $AppSvcTagDocker
-                fi
             done
         done < "$CONFIG_DIR/${STACK}VersionTemplateMap.txt"
     else
+    	# KuduLite Image, add single image support
         local TestRepoTagUpperCase="${TEST_IMAGE_REPO_NAME}/${STACK}:${PIPELINE_BUILD_NUMBER}"
         local TestRepoTag="${TestRepoTagUpperCase,,}"
-        local appSvcDockerfilePath="${SYSTEM_ARTIFACTS_DIR}/${STACK}/GitRepo/kudu/Dockerfile" 
+        local appSvcDockerfilePath="${SYSTEM_ARTIFACTS_DIR}/${STACK}/GitRepo/kudu/Dockerfile"
         echo "Listing artifacts dir"
         ls "${SYSTEM_ARTIFACTS_DIR}"
         echo "Listing stacks dir"
@@ -66,9 +64,12 @@ function buildDockerImage()
         echo "Building test image with tag '$TestRepoTag' and file $appSvcDockerfilePath..."
         echo docker build -t "$TestRepoTag" -f "$appSvcDockerfilePath" .
         docker build -t "$TestRepoTag" -f "$appSvcDockerfilePath" .
+	
+	# only push the images if merging to the master
         if [ "$BUILD_REASON" != "PullRequest" ]; then
             docker push $TestRepoTag
         fi
+
         echo $TestRepoTag > $SYSTEM_ARTIFACTS_DIR/builtImageList
     fi
 }

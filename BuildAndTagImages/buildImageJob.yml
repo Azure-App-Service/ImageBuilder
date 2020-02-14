@@ -20,12 +20,6 @@ steps:
     azureSubscriptionEndpoint: ${{ parameters.ascName }}
     azureContainerRegistry: ${{ parameters.acrName }}
 
-- task: Docker@2
-  displayName: DockerHub login
-  inputs:
-    command: login
-    containerRegistry: App Svc Test Docker Hub
-    
 - task: DownloadBuildArtifacts@0
   displayName: 'Download Build Artifacts'
   inputs:
