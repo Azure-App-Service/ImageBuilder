@@ -8,7 +8,7 @@ variables:
 jobs:
 
 - job: Job_TagAppSvcTestImages
-  displayName: Tag ACR Dev Repo Images to Test
+  displayName: Publish Images
   pool:
     vmImage: ubuntu-16.04
   timeoutInMinutes: 100
