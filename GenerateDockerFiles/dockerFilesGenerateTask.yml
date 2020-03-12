@@ -2,7 +2,7 @@ parameters:
   ascName: WAWS_Container_Images
   acrName: wawsimages.azurecr.io
   baseImageName: "mcr.microsoft.com/oryx"
-  baseImageVersion: "20200310.1"
+  baseImageVersion: "20200312.1"
   appSvcGitUrl: "https://github.com/Azure-App-Service"
 
 steps:

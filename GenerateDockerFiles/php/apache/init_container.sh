@@ -33,7 +33,7 @@ else
   userStartupCommand="$userStartupCommand; apache2-foreground;"
 fi
 
-oryxArgs="-appPath $appPath -output $startupCommandPath \
+oryxArgs="create-script -appPath $appPath -output $startupCommandPath \
     -bindPort $PORT -startupCommand '$userStartupCommand'"
 
 echo "Running oryx $oryxArgs"

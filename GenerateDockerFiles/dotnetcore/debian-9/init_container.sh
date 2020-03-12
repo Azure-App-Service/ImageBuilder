@@ -45,7 +45,7 @@ if [ "$APP_SVC_RUN_FROM_COPY" = true ]; then
     runFromPathArg="-runFromPath $runFromPath"
 fi
 
-oryxArgs="-appPath $appPath -output $startupCommandPath -defaultAppFilePath $defaultAppPath \
+oryxArgs="create-script -appPath $appPath -output $startupCommandPath -defaultAppFilePath $defaultAppPath \
     -bindPort $PORT -userStartupCommand '$userStartupCommand' $runFromPathArg"
 
 echo "Running oryx $oryxArgs"

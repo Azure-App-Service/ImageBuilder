@@ -44,7 +44,7 @@ def find_and_launch_entrypoint():
         print('Executing entrypoint.py script:')
         subprocess_cmd('python -u /usr/local/bin/entrypoint.py')
     else:
-        oryxCmd = "oryx -appPath /home/site/wwwroot -output /opt/startup/startup.sh -defaultApp /opt/defaultsite "
+        oryxCmd = "oryx create-script -appPath /home/site/wwwroot -output /opt/startup/startup.sh -defaultApp /opt/defaultsite "
         cmd = getStartupArgs()
         if cmd is not None:
             oryxCmd += ' -userStartupCommand ' + '\'' + cmd + '\''
