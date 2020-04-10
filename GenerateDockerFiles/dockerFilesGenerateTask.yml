@@ -64,7 +64,15 @@ steps:
     scriptPath: ./GenerateDockerFiles/KuduLite/generateDockerfiles.sh
     args: $(Build.ArtifactStagingDirectory) ${{ parameters.baseImageName }} ${{ parameters.baseImageVersion }} ${{ parameters.appSvcGitUrl }} $(System.DefaultWorkingDirectory)/Config
 
-# Publish Build Artifacts
+- task: ShellScript@2
+  displayName: 'Generate Static Site Docker Files'
+  inputs:
+    scriptPath: ./GenerateDockerFiles/staticsite/generateDockerfiles.sh
+    args: $(Build.ArtifactStagingDirectory) ${{ parameters.baseImageName }} ${{ parameters.baseImageVersion }} ${{ parameters.appSvcGitUrl }} $(System.DefaultWorkingDirectory)/Config
+  
+  
+
+    # Publish Build Artifacts
 # Publish build artifacts to Azure Pipelines/TFS or a file share
 - task: PublishBuildArtifacts@1
   inputs:
