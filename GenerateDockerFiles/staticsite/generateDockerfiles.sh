@@ -33,7 +33,7 @@ function generateDockerFiles()
         CURR_VERSION_DIRECTORY="${APP_SVC_REPO_DIR}/${STACK_VERSION}"
         TARGET_DOCKERFILE="${CURR_VERSION_DIRECTORY}/Dockerfile"
 
-        echo "Generating App Service Dockerfile and dependencies for stack '$STACK_NAME' in directory '$CURR_VERSION_DIRECTORY'..."
+        echo "Generating App Service Dockerfile and dependencies for image '$STACK_NAME-$STACK_VERSION' in directory '$CURR_VERSION_DIRECTORY'..."
 
         # Remove Existing Version directory, eg: GitRepo/1.0 to replace with realized files
         rm -rf "$CURR_VERSION_DIRECTORY"

@@ -2,7 +2,7 @@ server {
   listen PORT default_server;
   listen [::]:PORT default_server;
   root /home/site/wwwroot;
-  index index.html;
+  index index.html hostingstart.html;
   
   location / {
     try_files $uri $uri/ =404;

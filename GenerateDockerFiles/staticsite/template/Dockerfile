@@ -28,14 +28,14 @@ RUN mkdir -p /tmp
 COPY sshd_config /etc/ssh/
 
 # ssh setup
+# configure startup
+COPY sshd_config /etc/ssh/
 COPY ssh_setup.sh /tmp
-RUN chmod -R +x /opt/startup \
+RUN mkdir -p /opt/startup \
+   && chmod -R +x /opt/startup \
    && chmod -R +x /tmp/ssh_setup.sh \
    && (sleep 1;/tmp/ssh_setup.sh 2>&1 > /dev/null) \
-   && rm -rf /tmp/* \
-   && echo "cd /home" >> /root/.bashrc
-#    && cd /opt/startup \
-#    && npm install 
+   && rm -rf /tmp/* 
 
 # RUN chmod -R +x /opt/startup
 
@@ -53,7 +53,7 @@ COPY mysite /etc/nginx/sites-available/mysite
 COPY nginx.conf /etc/nginx/nginx.conf
 RUN mkdir /etc/nginx/sites-enabled
 
-COPY hostingstart.html /home/site/wwwroot/index.html
+# COPY hostingstart.html /home/site/wwwroot/index.html
 
 ENTRYPOINT ["/opt/startup/init_container.sh"]
 
