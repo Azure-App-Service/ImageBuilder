@@ -104,9 +104,9 @@ ENV PATH ${PATH}:/home/site/wwwroot
 # maybe save a copy locally
 RUN wget http://ftp.us.debian.org/debian/pool/main/o/openssl1.0/libssl1.0.2_1.0.2u-1~deb9u1_amd64.deb \
   && dpkg -i libssl1.0.2_1.0.2u-1~deb9u1_amd64.deb \
-  && wget http://ftp.us.debian.org/debian/pool/main/libx/libxcrypt/libcrypt1-udeb_4.4.15-1_amd64.udeb \
+  && wget http://ftp.us.debian.org/debian/pool/main/libx/libxcrypt/libcrypt1-udeb_4.4.16-1_amd64.udeb \
   && dpkg -i libcrypt1-udeb_4.4.15-1_amd64.udeb \
-  && wget http://http.us.debian.org/debian/pool/main/g/glibc/libc6-udeb_2.30-2_amd64.udeb \
+  && wget http://http.us.debian.org/debian/pool/main/g/glibc/libc6-udeb_2.30-4_amd64.udeb \
   && dpkg -i libc6-udeb_2.30-2_amd64.udeb \
   && wget http://ftp.us.debian.org/debian/pool/main/o/openssl/libcrypto1.1-udeb_1.1.0l-1~deb9u1_amd64.udeb \
   && dpkg -i --force-overwrite libcrypto1.1-udeb_1.1.0l-1~deb9u1_amd64.udeb \
