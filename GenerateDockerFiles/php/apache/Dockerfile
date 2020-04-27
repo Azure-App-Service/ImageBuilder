@@ -69,6 +69,8 @@ RUN rm -f /usr/local/etc/php/conf.d/php.ini \
 RUN rm -f /etc/apache2/conf-enabled/other-vhosts-access-log.conf
 RUN rm /etc/apache2/sites-enabled/000-default.conf
 
+COPY mpm_prefork.conf /etc/apache2/mods-available/mpm_prefork.conf
+
 WORKDIR /home/site/wwwroot
 
 ENTRYPOINT ["/bin/init_container.sh"]
