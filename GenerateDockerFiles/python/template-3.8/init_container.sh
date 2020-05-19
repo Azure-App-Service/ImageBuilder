@@ -17,9 +17,6 @@ Note: Any data outside '/home' is not persisted
 EOL
 cat /etc/motd
 
-# Create the virtual environment for python
-python3 -m venv /home/site/wwwroot/venv
-
 sed -i "s/SSH_PORT/$SSH_PORT/g" /etc/ssh/sshd_config
 service ssh start
 
@@ -29,7 +26,7 @@ eval $(printenv | sed -n "s/^\([^=]\+\)=\(.*\)$/export \1=\2/p" | sed 's/"/\\\"/
 echo "$@" > /opt/startup/startupCommand
 chmod 755 /opt/startup/startupCommand
 
-oryxArgs='create-script -appPath /home/site/wwwroot -output /opt/startup/startup.sh -virtualEnvName venv -defaultApp /opt/defaultsite'
+oryxArgs='create-script -appPath /home/site/wwwroot -output /opt/startup/startup.sh -virtualEnvName antenv -defaultApp /opt/defaultsite'
 if [ $# -eq 0 ]; then
     echo 'App Command Line not configured, will attempt auto-detect'
 else

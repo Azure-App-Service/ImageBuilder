@@ -32,7 +32,7 @@ ENV SSH_PORT 2222
 RUN mkdir -p /home/LogFiles \
      && echo "root:Docker!" | chpasswd \
      && echo "cd /home" >> /root/.bashrc \
-     && echo "source /home/site/wwwroot/venv/bin/activate" >> /root/.bashrc
+     && echo "if [ -d \"/home/site/wwwroot/antenv3.6\" ]; then source /home/site/wwwroot/antenv3.6/bin/activate; elif [ -d \"/antenv3.6\" ]; then source /antenv3.6/bin/activate; fi" >> /root/.bashrc
 
 COPY sshd_config /etc/ssh/
 RUN mkdir -p /opt/startup
