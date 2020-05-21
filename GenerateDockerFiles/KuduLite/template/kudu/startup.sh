@@ -41,7 +41,7 @@ useradd -u $USER_ID -g $GROUP_NAME $USER_NAME
 chown -R $USER_NAME:$GROUP_NAME /tmp
 mkdir -p /home/LogFiles/webssh
 
-/bin/bash -c "benv node=9 npm=6 pm2 start /opt/webssh/index.js -o /home/LogFiles/webssh/pm2.log -e /home/LogFiles/webssh/pm2.err &"
+/bin/bash -c "benv node=9 npm=6 pm2 start /opt/webssh/index.js -o /dev/null -e /home/LogFiles/webssh/pm2.err &"
 sed -i "s/webssh-port-placeholder/$KUDU_WEBSSH_PORT/g" /opt/webssh/config.json
 
 export KUDU_RUN_USER="$USER_NAME"
