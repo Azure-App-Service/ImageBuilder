@@ -18,6 +18,15 @@ cat /etc/motd
 # Get environment variables to show up in SSH session
 eval $(printenv | sed -n "s/^\([^=]\+\)=\(.*\)$/export \1=\2/p" | sed 's/"/\\\"/g' | sed '/=/s//="/' | sed 's/$/"/' >> /etc/profile)
 
+# Enable trigger profiling in xdebug
+if [ "${WEBSITE_PROFILER_ENABLE_TRIGGER^^}" = TRUE ] ; then 
+  echo 'xdebug.profiler_enable_trigger=1' >> /usr/local/etc/php/conf.d/php.ini;
+  echo 'xdebug.profiler_enable=0' >> /usr/local/etc/php/conf.d/php.ini;
+else
+  sed -i "s/xdebug.profiler_enable_trigger=1//g" /usr/local/etc/php/conf.d/php.ini
+  sed -i "s/xdebug.profiler_enable=0//g" /usr/local/etc/php/conf.d/php.ini
+fi
+
 # redirect php custom logs to stderr
 if [ "${WEBSITE_ENABLE_PHP_ACCESS_LOGS^^}" = TRUE ] ; then 
 	sed -i "s/CustomLog \/dev\/null combined/CustomLog \/dev\/stderr combined/g" /etc/apache2/apache2.conf; 
