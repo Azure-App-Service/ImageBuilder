@@ -16,6 +16,7 @@ RUN apt-get update \
         dnsutils \
         tcpdump \
         iproute2 \
+        nano \
     && pip install --upgrade pip \
     && pip install subprocess32 \
     && pip install gunicorn \ 

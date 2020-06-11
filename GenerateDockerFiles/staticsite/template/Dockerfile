@@ -16,7 +16,8 @@ RUN mkdir -p /home/LogFiles /opt/startup \
       net-tools \
       dnsutils \
       tcpdump \
-      iproute2
+      iproute2 \
+      nano
 
 # setup default site
 RUN rm -f /etc/ssh/sshd_config

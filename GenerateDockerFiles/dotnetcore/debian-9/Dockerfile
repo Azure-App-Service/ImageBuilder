@@ -14,6 +14,7 @@ RUN apt-get update \
         dnsutils \
         tcpdump \
         iproute2 \
+        nano \
     && apt-get upgrade -y openssl \
     && rm -rf /var/lib/apt/lists/*
 
