@@ -27,7 +27,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="*app\**">
+    <Content Include="node\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+    <ItemGroup>
+    <Content Include="dotnetcore\**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

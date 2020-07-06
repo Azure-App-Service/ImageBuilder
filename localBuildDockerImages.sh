@@ -25,3 +25,6 @@ BuildAndTagImages/build.sh $DockerFileDir appsvctest "Config" $BuildNumber $Stac
 
 StackName="ruby"
 BuildAndTagImages/build.sh $DockerFileDir appsvctest "Config" $BuildNumber $StackName "PullRequest"
+
+StackName="KuduLite"
+BuildAndTagImages/build.sh $DockerFileDir appsvctest "Config" $BuildNumber $StackName "PullRequest"
