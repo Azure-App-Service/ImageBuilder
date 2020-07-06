@@ -50,4 +50,4 @@ oryxArgs="create-script -appPath $appPath -output $startupCommandPath -defaultAp
 
 echo "Running oryx $oryxArgs"
 eval oryx $oryxArgs
-$startupCommandPath
+exec $startupCommandPath

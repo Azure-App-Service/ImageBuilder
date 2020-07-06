@@ -72,5 +72,5 @@ echo "Launching oryx with: $oryxArgs"
 eval "oryx $oryxArgs"
 chmod +x /opt/startup/startup.sh
 #launch startup script
-/opt/startup/startup.sh 
+exec /opt/startup/startup.sh 
 
