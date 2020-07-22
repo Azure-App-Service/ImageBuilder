@@ -64,7 +64,7 @@ if [ "$APPSVC_REMOTE_DEBUGGING" == "TRUE" ]; then
         debugArgs+=" -debugWait"
     fi
 
-    oryxArgs="$debugArgs $oryxArgs"
+    oryxArgs="$oryxArgs $debugArgs"
 fi
 
 echo "Launching oryx with: $oryxArgs"
