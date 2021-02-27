@@ -7,7 +7,7 @@ RUN apt install -y nodejs npm
 RUN cd /tmp \
     && git clone https://github.com/Azure-App-Service/KuduLite.git \
     && cd ./KuduLite \
-    && git checkout user/sanemht/3.1MigrationRebased \
+    && git checkout user/sanmeht/3.1Migration \
     && git log --format="%H" -n 1 > /kudu_commit.log \
     && cd ./Kudu.Services.Web \
     && dotnet publish -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=false -p:PublishTrimmed=true -p:PublishReadyToRun=true -o /opt/Kudu \
@@ -29,6 +29,8 @@ ENV KUDU_WEBSSH_PORT=3000
 # Default App Settings for Main App Container SSH
 ENV WEBSITE_SSH_USER=root
 ENV WEBSITE_SSH_PASSWORD=Docker!
+
+ENV KUDU_BUILD_VERSION=1.0.0
 
 COPY webssh.zip ssh /tmp/
 COPY --from=build-env /kudu_commit.log /kudu_commit.log
