@@ -169,7 +169,7 @@ jobs:
     parameters:
       stackName: KuduLite
       filesRootPath: GitRepo-DynInst
-      imgTag: dynamic_$(Build.BuildNumber)
+      imgTag: buster_$(Build.BuildNumber)
 
 - job: Job_BuildStaticSiteImage
   displayName: Build Static Site Dev Images

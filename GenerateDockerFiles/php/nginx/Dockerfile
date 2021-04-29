@@ -9,8 +9,7 @@ RUN apt-get update \
       net-tools \
       dnsutils \
       tcpdump \
-      iproute2 \
-      nano
+      iproute2
 
 COPY init_container.sh /bin/
 COPY hostingstart.html /home/site/wwwroot/hostingstart.html
@@ -45,19 +44,9 @@ ENV WEBSITE_ROLE_INSTANCE_ID localRoleInstance
 ENV WEBSITE_INSTANCE_ID localInstance
 ENV PATH ${PATH}:/home/site/wwwroot
 
-RUN sed -i 's!ErrorLog ${APACHE_LOG_DIR}/error.log!ErrorLog /dev/stderr!g' /etc/apache2/apache2.conf 
-RUN sed -i 's!User ${APACHE_RUN_USER}!User www-data!g' /etc/apache2/apache2.conf 
-RUN sed -i 's!User ${APACHE_RUN_GROUP}!Group www-data!g' /etc/apache2/apache2.conf 
-RUN { \
-   echo 'DocumentRoot /home/site/wwwroot'; \
-   echo 'DirectoryIndex default.htm default.html index.htm index.html index.php hostingstart.html'; \
-   echo 'CustomLog /dev/null combined'; \
-   echo '<FilesMatch "\.(?i:ph([[p]?[0-9]*|tm[l]?))$">'; \
-   echo '   SetHandler application/x-httpd-php'; \
-   echo '</FilesMatch>'; \
-   echo 'EnableMMAP Off'; \
-   echo 'EnableSendfile Off'; \
-} >> /etc/apache2/apache2.conf
+
+RUN sed -i "s/access_log \/var\/log\/nginx\/access.log;/access_log off;/g" /etc/nginx/nginx.conf
+RUN sed -i "s/error_log \/var\/log\/nginx\/error.log;/error_log \/dev\/stderr;/g" /etc/nginx/nginx.conf
 
 RUN rm -f /usr/local/etc/php/conf.d/php.ini \
    && { \
@@ -68,11 +57,6 @@ RUN rm -f /usr/local/etc/php/conf.d/php.ini \
                 echo 'date.timezone=UTC'; \
                 echo 'zend_extension=opcache'; \
     } > /usr/local/etc/php/conf.d/php.ini
-
-RUN rm -f /etc/apache2/conf-enabled/other-vhosts-access-log.conf
-RUN rm /etc/apache2/sites-enabled/000-default.conf
-
-COPY mpm_prefork.conf /etc/apache2/mods-available/mpm_prefork.conf
 
 WORKDIR /home/site/wwwroot
 
