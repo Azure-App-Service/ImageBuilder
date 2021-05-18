@@ -84,12 +84,12 @@ function buildDockerImage()
         local BuildVerRepoTag="${BuildVerRepoTagUpperCase,,}"
         local MCRRepoTagUpperCase="${WAWS_IMAGE_REPO_NAME}/public/appsvc/${STACK}:${IMG_TAG}"
         local MCRRepoTag="${MCRRepoTagUpperCase,,}"
-        local appSvcDockerfilePath="${SYSTEM_ARTIFACTS_DIR}/${STACK}/${FILES_ROOT_PATH}/kudu/Dockerfile"
+        local appSvcDockerfilePath="${SYSTEM_ARTIFACTS_DIR}/${STACK}/${FILES_ROOT_PATH}/Dockerfile"
 	
         echo "Listing artifacts dir"
         ls "${SYSTEM_ARTIFACTS_DIR}"
         echo "Listing stacks dir"
-        cd "${SYSTEM_ARTIFACTS_DIR}/${STACK}/${FILES_ROOT_PATH}/kudu"
+        cd "${SYSTEM_ARTIFACTS_DIR}/${STACK}/${FILES_ROOT_PATH}"
         echo
         echo "Building test image with tag '$BuildVerRepoTag' and file $appSvcDockerfilePath..."
         echo docker build -t "$BuildVerRepoTag" -f "$appSvcDockerfilePath" .

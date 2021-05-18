@@ -4,6 +4,7 @@ parameters:
   baseImageName: "mcr.microsoft.com/oryx"
   baseImageVersion: "20210510.2"
   appSvcGitUrl: "https://github.com/Azure-App-Service"
+  kuduliteInternalRepo: ""
 
 steps:
 - script: |
@@ -64,7 +65,7 @@ steps:
   displayName: 'Generate KuduLite Docker Files'
   inputs:
     scriptPath: ./GenerateDockerFiles/KuduLite/generateDockerfiles.sh
-    args: $(Build.ArtifactStagingDirectory) ${{ parameters.baseImageName }} ${{ parameters.baseImageVersion }} ${{ parameters.appSvcGitUrl }} $(System.DefaultWorkingDirectory)/Config
+    args: $(Build.ArtifactStagingDirectory) ${{ parameters.baseImageName }} ${{ parameters.baseImageVersion }} ${{ parameters.kuduliteInternalRepo }} $(System.DefaultWorkingDirectory)/Config
 
 - task: ShellScript@2
   displayName: 'Generate Static Site Docker Files'
