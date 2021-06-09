@@ -84,6 +84,14 @@ namespace Tests
 
                         await CleanupContainer(client, name);
                         tryNumber = maxTries + 1;
+                        Console.WriteLine("pass");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.ToString());
+                    if (tryNumber == maxTries+1){
+                        throw ex;
                     }
                 }
                 finally

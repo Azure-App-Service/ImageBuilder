@@ -27,7 +27,7 @@ function generateDockerFiles()
     while IFS=, read -r STACK_VERSION BASE_IMAGE STACK_VERSION_TEMPLATE_DIR STACK_TAGS || [[ -n $STACK_VERSION ]] || [[ -n $BASE_IMAGE ]] || [[ -n $STACK_VERSION_TEMPLATE_DIR ]] || [[ -n $STACK_TAGS ]]
     do
         # Base Image
-        CURR_VERSION_DIRECTORY="${APP_SVC_REPO_DIR}/${STACK_VERSION}"
+        CURR_VERSION_DIRECTORY="${APP_SVC_REPO_DIR}/${STACK_TAGS}"
         TARGET_DOCKERFILE="${CURR_VERSION_DIRECTORY}/Dockerfile"
 
         echo "Generating App Service Dockerfile and dependencies for image '$STACK_NAME-$STACK_VERSION' in directory '$CURR_VERSION_DIRECTORY'..."

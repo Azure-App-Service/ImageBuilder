@@ -18,10 +18,11 @@ then
     dotnet test Tests/php/Tests.csproj
     dotnet test Tests/python/Tests.csproj
     dotnet test Tests/node/Tests.csproj
+    dotnet test Tests/ruby/Tests.csproj
     ./localSetupTests.sh
     dotnet test Tests/KuduLite/Tests.csproj
 else
-    if [ "$stack" == "dotnetcore" ] || [ "$stack" == "php" ] || [ "$stack" == "python" ] || [ "$stack" == "node" ]
+    if [ "$stack" == "dotnetcore" ] || [ "$stack" == "php" ] || [ "$stack" == "python" ] || [ "$stack" == "node" ]  || [ "$stack" == "ruby" ] 
     then
         dotnet test Tests/$stack/Tests.csproj
     elif [ "$stack" == "KuduLite" ]

@@ -1,0 +1,30 @@
+current directory: /home/site/abc/vendor/bundle/ruby/2.5.0/gems/nio4r-2.5.2/ext/nio4r
+/usr/local/.rbenv/versions/2.5.5/bin/ruby -r ./siteconf20200714-350-17i3lo0.rb extconf.rb
+checking for unistd.h... yes
+checking for linux/aio_abi.h... yes
+checking for sys/select.h... yes
+checking for port_event_t in poll.h... no
+checking for sys/epoll.h... yes
+checking for sys/event.h... no
+checking for port_event_t in port.h... no
+checking for sys/resource.h... yes
+creating Makefile
+
+current directory: /home/site/abc/vendor/bundle/ruby/2.5.0/gems/nio4r-2.5.2/ext/nio4r
+make "DESTDIR=" clean
+
+current directory: /home/site/abc/vendor/bundle/ruby/2.5.0/gems/nio4r-2.5.2/ext/nio4r
+make "DESTDIR="
+compiling bytebuffer.c
+compiling monitor.c
+compiling nio4r_ext.c
+In file included from nio4r_ext.c:7:0:
+../libev/ev.c:1867:31: warning: 'ev_default_loop_ptr' initialized and declared 'extern'
+   EV_API_DECL struct ev_loop *ev_default_loop_ptr = 0; /* needs to be initialised to make it a definition despite extern */
+                               ^
+compiling selector.c
+linking shared-object nio4r_ext.so
+
+current directory: /home/site/abc/vendor/bundle/ruby/2.5.0/gems/nio4r-2.5.2/ext/nio4r
+make "DESTDIR=" install
+/usr/bin/install -c -m 0755 nio4r_ext.so ./.gem.20200714-350-1djitcn
