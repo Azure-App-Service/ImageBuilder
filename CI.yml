@@ -135,6 +135,23 @@ jobs:
     parameters:
       stackName: php-xdebug
 
+- job: Job_DockerBuildRubyImages
+  displayName: Build Ruby Dev Images
+  dependsOn: Job_GenerateDockerFiles
+  pool:
+    vmImage: ubuntu-18.04
+  timeoutInMinutes: 100
+  steps:
+  - script: |
+      echo "##vso[task.setvariable variable=InitialChecks;]true"
+      echo "##vso[task.setvariable variable=GenerateDockerFiles;]true"
+      echo "##vso[task.setvariable variable=BuildBuildImages;]false"
+      echo "##vso[task.setvariable variable=PushBuildImages;]false"
+      echo "##vso[task.setvariable variable=PushRuntimeImages;]false"  
+  - template: BuildAndTagImages/buildImageJob.yml
+    parameters:
+      stackName: ruby
+
 - job: Job_BuildKuduLiteImage
   displayName: Build KuduLite Dev Images
   dependsOn: Job_GenerateDockerFiles
@@ -169,7 +186,7 @@ jobs:
     parameters:
       stackName: KuduLite
       filesRootPath: GitRepo-DynInst
-      imgTag: dynamic_$(Build.BuildNumber)
+      imgTag: buster_$(Build.BuildNumber)
 
 - job: Job_BuildStaticSiteImage
   displayName: Build Static Site Dev Images

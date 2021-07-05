@@ -45,8 +45,8 @@ function generateDockerFiles()
         echo "Copying ${DIR}/SampleApps/${STACK_VERSION}/bin.zip to ${CURR_VERSION_DIRECTORY}..."
         cp "${DIR}/SampleApps/${STACK_VERSION}/bin.zip" "${CURR_VERSION_DIRECTORY}"
 
-        if [ "$BASE_IMAGE" == "5.0" ]; then
-            BRANDING=".Net"
+        if [ "$BASE_IMAGE" == "5.0" ] || [ "$BASE_IMAGE" == "6.0" ]; then
+            BRANDING=".NET"
         fi
 
         # Replace the DOTNET_BRANDING_PLACEHOLDER in hostinstart.html

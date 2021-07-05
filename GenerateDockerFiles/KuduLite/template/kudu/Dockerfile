@@ -72,6 +72,9 @@ RUN apt-get update \
     clamav=0.102.3+dfsg-0~deb9u1 \
   && freshclam
 
+# Install azcopy
+RUN curl -L https://aka.ms/downloadazcopy-v10-linux | tar -C /usr/local/bin -xzf - --strip-components=1
+
 # Enable SSH for Kudu Console
 RUN apt-get install -y ssh \
    && sed -i '/^#Port* /s/^#//' /etc/ssh/sshd_config \
@@ -137,7 +140,7 @@ RUN ln -s /opt/nodejs/9/lib/node_modules/npm/bin/npm-cli.js /usr/bin/npm-cli.js
 ENV PATH=$PATH:/opt/nodejs/9/bin
 
 ENV KUDU_WEBSSH_PORT=3000
-ENV KUDU_BUILD_VERSION=0.0.1
+ENV KUDU_BUILD_VERSION=1.0.0
 
 # Default App Settings for Main App Container SSH
 ENV WEBSITE_SSH_USER=root

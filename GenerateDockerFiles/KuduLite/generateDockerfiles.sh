@@ -49,13 +49,13 @@ function generateKuduLiteDockerFiles()
     echo "Done."
 }
 
-function generateKuduLiteDynamicInstallsDockerFiles()
+function generateKuduLiteBusterInstallsDockerFiles()
 {
     # Example line:
-    # 1.0 -> uses Oryx Base Image mcr.microsoft.com/oryx/github-actions:$BASE_IMAGE_VERSION_STREAM_FEED
+    # 1.0 -> uses Oryx Base Image mcr.microsoft.com/oryx/github-actions-buster-$BASE_IMAGE_VERSION_STREAM_FEED
 
-    # Base Image, github-actions-20200626.1
-    BASE_IMAGE_NAME="${BASE_IMAGE_REPO_NAME}:github-actions-$BASE_IMAGE_VERSION_STREAM_FEED"
+    # Base Image, eg. github-actions-buster-20200626.1
+    BASE_IMAGE_NAME="${BASE_IMAGE_REPO_NAME}:github-actions-buster-$BASE_IMAGE_VERSION_STREAM_FEED"
     CURR_VERSION_DIRECTORY="${DYN_INST_REPO_DIR}/"
     TARGET_DOCKERFILE="${CURR_VERSION_DIRECTORY}/kudu/Dockerfile"
 
@@ -98,4 +98,4 @@ function pullAppSvcRepo()
 
 pullAppSvcRepo
 generateKuduLiteDockerFiles
-generateKuduLiteDynamicInstallsDockerFiles
+generateKuduLiteBusterInstallsDockerFiles

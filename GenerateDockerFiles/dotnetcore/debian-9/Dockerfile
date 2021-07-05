@@ -18,6 +18,8 @@ RUN apt-get update \
     && apt-get upgrade -y openssl \
     && rm -rf /var/lib/apt/lists/*
 
+RUN curl -L https://aka.ms/downloadazcopy-v10-linux | tar -C /usr/local/bin -xzf - --strip-components=1
+
 RUN mkdir -p /defaulthome/hostingstart \
     && mkdir -p /home/LogFiles/ \
     && echo "root:Docker!" | chpasswd \
@@ -43,7 +45,6 @@ RUN mkdir -p /opt/startup \
 
 ENV PORT 8080
 ENV SSH_PORT 2222
-ENV DOTNET_MONITOR_PORT 50050
 EXPOSE 8080 2222 50050
 
 ENV WEBSITE_ROLE_INSTANCE_ID localRoleInstance
