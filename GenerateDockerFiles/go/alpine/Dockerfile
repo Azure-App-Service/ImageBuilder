@@ -1,7 +1,15 @@
+## First step: Build Golang binary
+FROM golang:1.16-alpine3.14 as BUILDER
+RUN mkdir /build
+ADD hostingstart.go /build/
+WORKDIR /build
+RUN go mod init hostingstart
+RUN CGO_ENABLED=0 GOOS=linux go build -a -o hostingstart .
+
+
+## Second step: Copy executable
 FROM alpine:3.14
 LABEL maintainer="Azure App Services Container Images <appsvc-images@microsoft.com>"
-
-# Web Site Home
 ENV HOME_SITE "/home/site/wwwroot"
 ENV APP_PATH "/home/site/wwwroot"
 
@@ -32,20 +40,20 @@ RUN mkdir -p /home/LogFiles /opt/startup \
 RUN rm -f /etc/ssh/sshd_config
 COPY init_container.sh /opt/startup
 COPY hostingstart.html /opt/startup
-COPY hostingstart /opt/startup
+COPY --from=BUILDER /build/hostingstart /opt/startup
 
 # Configure startup
 RUN mkdir -p /tmp
 COPY sshd_config /etc/ssh/
 
 COPY ssh_setup.sh /tmp
-RUN chmod -R +x /opt/startup \
-   && chmod -R +x /tmp/ssh_setup.sh \
+RUN chmod -R 777 /opt/startup \
+   && chmod -R 777 /tmp/ssh_setup.sh \
    && (sleep 1;/tmp/ssh_setup.sh 2>&1 > /dev/null) \
    && rm -rf /tmp/* \
    && echo "cd /home" >> /root/.bashrc \
    && cd /opt/startup \
-   && chmod +x /opt/startup/hostingstart
+   && chmod 777 /opt/startup/hostingstart
 
 ENV PORT 8080
 ENV SSH_PORT 2222
