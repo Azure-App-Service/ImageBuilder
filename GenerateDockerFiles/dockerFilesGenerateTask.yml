@@ -25,6 +25,12 @@ steps:
     azureContainerRegistry: ${{ parameters.acrName }}
 
 - task: ShellScript@2
+  displayName: 'Generate Go Docker Files'
+  inputs:
+    scriptPath: ./GenerateDockerFiles/go/generateDockerfiles.sh
+    args: $(Build.ArtifactStagingDirectory) ${{ parameters.baseImageName }} ${{ parameters.baseImageVersion }} ${{ parameters.appSvcGitUrl }} $(System.DefaultWorkingDirectory)/Config
+
+- task: ShellScript@2
   displayName: 'Generate Node Docker Files'
   inputs:
     scriptPath: ./GenerateDockerFiles/node/generateDockerfiles.sh
