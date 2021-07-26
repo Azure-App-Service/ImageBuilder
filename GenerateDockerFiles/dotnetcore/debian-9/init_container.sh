@@ -46,6 +46,8 @@ if [ "$APP_SVC_RUN_FROM_COPY" = true ]; then
 fi
 
 if [ "$USE_DOTNET_MONITOR" = true ]; then
+    mkdir -p $HOME/.config/dotnet-monitor
+    echo "{\"DefaultProcess\": {\"Filters\": [{\"Key\": \"ProcessName\",\"Value\": \"dotnet\"}]}}" > $HOME/.config/dotnet-monitor/settings.json
     /opt/dotnetcore-tools/dotnet-monitor collect --urls "http://0.0.0.0:50051" --metrics true --metricUrls "http://0.0.0.0:50050" --no-auth > /dev/null 2>&1 &
 fi
 
