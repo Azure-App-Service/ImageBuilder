@@ -13,10 +13,8 @@ declare -r DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 # Directory for Generated Docker Files
 declare -r STACK_NAME="go"
 declare -r SYSTEM_ARTIFACTS_DIR="$1"
-declare -r CONFIG_DIR="$5"                                         # ${Current_Repo}/Config
+declare -r CONFIG_DIR="$5" # ${Current_Repo}/Config
 declare -r APP_SVC_REPO_DIR="$SYSTEM_ARTIFACTS_DIR/$STACK_NAME/GitRepo"
-
-
 
 function generateDockerFiles()
 {

@@ -6,7 +6,6 @@ WORKDIR /build
 RUN go mod init hostingstart
 RUN CGO_ENABLED=0 GOOS=linux go build -a -o hostingstart .
 
-
 ## Second step: Copy executable
 FROM alpine:3.14
 LABEL maintainer="Azure App Services Container Images <appsvc-images@microsoft.com>"
@@ -14,7 +13,6 @@ ENV HOME_SITE "/home/site/wwwroot"
 ENV APP_PATH "/home/site/wwwroot"
 
 # Setup SSH and activate virtual env on ssh into containers
-# NOTE: dnsutils is not available in apk
 # NOTE: libc6-compat is needed for Go
 RUN mkdir -p /home/LogFiles /opt/startup \
      && echo "root:Docker!" | chpasswd \
@@ -34,6 +32,7 @@ RUN mkdir -p /home/LogFiles /opt/startup \
       iproute2 \
       nano \
       libc6-compat \
+      bind-tools \
      && chmod -R 777 /opt/startup
 
 # Setup default site
