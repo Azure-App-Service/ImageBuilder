@@ -1,0 +1,8 @@
+{
+  "DefaultProcess": {
+    "Filters": [{
+      "Key": "ProcessName",
+      "Value": "dotnet"
+    }]
+  }
+}
