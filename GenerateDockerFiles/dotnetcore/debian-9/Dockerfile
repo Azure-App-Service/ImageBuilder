@@ -43,6 +43,8 @@ RUN mkdir -p /opt/startup \
    && (sleep 1;/tmp/ssh_setup.sh 2>&1 > /dev/null) \
    && rm -rf /tmp/*
 
+COPY dotnet_monitor_config.json /dotnet_monitor_config.json
+
 ENV PORT 8080
 ENV SSH_PORT 2222
 EXPOSE 8080 2222 50050

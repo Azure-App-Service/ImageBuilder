@@ -15,7 +15,7 @@ declare -r STACK_NAME="KuduLite"
 declare -r SYSTEM_ARTIFACTS_DIR="$1"
 declare -r BASE_IMAGE_REPO_NAME="$2/build"
 declare -r BASE_IMAGE_VERSION_STREAM_FEED="$3"                     # Base Image Version; Oryx Version : 20190819.2
-declare -r APPSVC_KUDULITE_REPO="$4/${STACK_NAME}Build.git"        # https://github.com/Azure-App-Service/KuduLiteBuild.git
+declare -r APPSVC_KUDULITE_REPO="$4"        
 declare -r CONFIG_DIR="$5"                                         # ${Current_Repo}/Config
 declare -r METADATA_FILE="$SYSTEM_ARTIFACTS_DIR/metadata"
 declare -r APP_SVC_REPO_DIR="$SYSTEM_ARTIFACTS_DIR/$STACK_NAME/GitRepo"
@@ -31,14 +31,12 @@ function generateKuduLiteDockerFiles()
     # Base Image
     BASE_IMAGE_NAME="${BASE_IMAGE_REPO_NAME}:$BASE_IMAGE_VERSION_STREAM_FEED"
     CURR_VERSION_DIRECTORY="${APP_SVC_REPO_DIR}/"
-    TARGET_DOCKERFILE="${CURR_VERSION_DIRECTORY}/kudu/Dockerfile"
+    TARGET_DOCKERFILE="${CURR_VERSION_DIRECTORY}/Dockerfile"
+
+    #Rename Dockerfile for main kudu
+    mv ${CURR_VERSION_DIRECTORY}/Dockerfile-Main ${CURR_VERSION_DIRECTORY}/Dockerfile
 
     echo "Generating App Service Dockerfile and dependencies for image '$BASE_IMAGE_NAME' in directory '$CURR_VERSION_DIRECTORY'..."
-
-    # Remove Existing Version directory, eg: GitRepo/1.0 to replace with realized files
-    rm -rf "$CURR_VERSION_DIRECTORY"
-    mkdir -p "$CURR_VERSION_DIRECTORY"
-    cp -R ${DIR}/template/* "$CURR_VERSION_DIRECTORY"
 
     # Replace placeholders, changing sed delimeter since '/' is used in path
     sed -i "s|BASE_IMAGE_NAME_PLACEHOLDER|$BASE_IMAGE_NAME|g" "$TARGET_DOCKERFILE"
@@ -57,14 +55,12 @@ function generateKuduLiteBusterInstallsDockerFiles()
     # Base Image, eg. github-actions-buster-20200626.1
     BASE_IMAGE_NAME="${BASE_IMAGE_REPO_NAME}:github-actions-buster-$BASE_IMAGE_VERSION_STREAM_FEED"
     CURR_VERSION_DIRECTORY="${DYN_INST_REPO_DIR}/"
-    TARGET_DOCKERFILE="${CURR_VERSION_DIRECTORY}/kudu/Dockerfile"
+    TARGET_DOCKERFILE="${CURR_VERSION_DIRECTORY}/Dockerfile"
+
+    #Rename Dockerfile for buster kudu
+    mv ${CURR_VERSION_DIRECTORY}/Dockerfile-Buster ${CURR_VERSION_DIRECTORY}/Dockerfile
 
     echo "Generating App Service Dockerfile and dependencies for image '$BASE_IMAGE_NAME' in directory '$CURR_VERSION_DIRECTORY'..."
-
-    # Remove Existing Version directory, eg: GitRepo/1.0 to replace with realized files
-    rm -rf "$CURR_VERSION_DIRECTORY"
-    mkdir -p "$CURR_VERSION_DIRECTORY"
-    cp -R ${DIR}/template_dynamicinstalls/* "$CURR_VERSION_DIRECTORY"
 
     # Replace placeholders, changing sed delimeter since '/' is used in path
     sed -i "s|BASE_IMAGE_NAME_PLACEHOLDER|$BASE_IMAGE_NAME|g" "$TARGET_DOCKERFILE"
