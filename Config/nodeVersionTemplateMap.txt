@@ -22,4 +22,5 @@
 10.12,10.12,pm2-template,10.12
 10.14,10.14,pm2-template,10.14
 12,12,pm2-template,12-lts|12.9
-14,14,node-template,14-lts|latest
+14,14,node-template,14-lts
+16,16,node-template,16-lts|latest
