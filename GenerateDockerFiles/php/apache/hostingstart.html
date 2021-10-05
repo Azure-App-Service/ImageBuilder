@@ -1,2 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
 
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta http-equiv=X-UA-Compatible content="IE=edge"><title>Microsoft Azure App Service - Welcome</title> <link rel="SHORTCUT ICON" href="https://c.s-microsoft.com/favicon.ico?v2" type="image/x-icon"/><link rel="stylesheet" href="https://ajax.aspnetcdn.com/ajax/bootstrap/4.1.1/css/bootstrap.min.css" crossorigin="anonymous"><link rel="stylesheet" type="text/css" href="https://appservice.azureedge.net/css/linux-landing-page/v3/main.css"><script type="text/javascript">window.onload=function(){try{var a=window.location.hostname;if(a.includes(".azurewebsites.net")){a=a.replace(".azurewebsites.net", "")}var b=document.getElementById("depCenterLink");b.setAttribute("href", b.getAttribute("href") + "&sitename=" + a);}catch(d){}}</script></head><body><nav class="navbar navbar-light bg-light"><a class="navbar-brand " href="#"><div class="container pl-4 ml-5"> <img src="https://appservice.azureedge.net/images/linux-landing-page/v3/microsoft_azure_logo.png" width="270" height="108" alt=""> </div></a></nav><div class="container-fluid container-height mr-2"><div class="pt-10 pb-10 mt-10 mb-10 d-xxs-none d-xs-none d-sm-none d-md-none d-lg-block d-xl-block" style="height:20px; width:100%; clear:both;"></div><div class="row"><div class="row col-xs-12 col-sm-12 d-block d-lg-none d-xl-none d-md-block d-sm-block d-xs-block"><div class="text-center"> <img src="https://appservice.azureedge.net/images/linux-landing-page/v3/php.svg"> </div></div><div class=" extra-pl-small-scr offset-xl-1 offset-lg-1 offset-md-2 offset-sm-2 offset-xs-4 col-xl-5 col-lg-5 col-md-10 col-sm-11 col-xs-11 div-vertical-center"><div class="container-fluid"><div class="row"><h2>Hey, PHP developers!</h2> </div><br><div class="row"><h4>Your app service is up and running.</h4> </div><div class="row"><h4>Time to take the next step and deploy your code.</h4> </div><div class="row info-mg-top"><p class=" pl-0 col-md-6 col-sm-12 info-mg-top"> Have your code ready?<br>Use deployment center to get code published from your client or setup continuous deployment.<br><a id='depCenterLink' href="https://go.microsoft.com/fwlink/?linkid=2057852"><button class="btn btn-primary btn-mg-top" type="submit">Deployment Center</button></a></p><p class="pl-0 offset-md-1 col-md-5 col-sm-12 info-mg-top">Don't have your code yet?<br>Follow our quickstart guide and you'll have a full app ready in 5 minutes or less.<br><button onclick="location.href='https://go.microsoft.com/fwlink/?linkid=2083418'" class="btn btn-primary btn-mg-top" type="submit">Quickstart</button></p></div></div></div><div class="col-xl-5 col-lg-5 col-md-12 d-none d-lg-block"><div class="text-center"> <img src="https://appservice.azureedge.net/images/linux-landing-page/v3/php.svg"> </div></div><div class="col-xl-1 col-lg-1 col-md-1"></div></div></div><!-- Bootstrap core JavaScript==================================================--><script src="https://ajax.aspnetcdn.com/ajax/jquery/jquery-3.2.1.min.js" crossorigin="anonymous"></script><script src="https://ajax.aspnetcdn.com/ajax/bootstrap/4.1.1/bootstrap.min.js" crossorigin="anonymous"></script></body></html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>Microsoft Azure App Service - Welcome</title>
+    <link rel="shortcut icon" href="https://appservice.azureedge.net/images/app-service/v4/favicon.ico"
+        type="image/x-icon" />
+    <link href="https://appservice.azureedge.net/css/app-service/v4/bootstrap.min.css" rel="stylesheet"
+        crossorigin="anonymous" />
+    <style>
+        html,
+        body {
+            height: 100%;
+            background-color: #ffffff;
+            color: #000000;
+            font-size: 13px;
+        }
+
+        * {
+            border-radius: 0 !important;
+        }
+    </style>
+    <script src="https://appservice.azureedge.net/js/app-service/v4/loc.min.js" crossorigin="anonymous"></script>
+    <script
+        type="text/javascript">window.onload = function () { try { var a = window.location.hostname; if (a.includes(".azurewebsites.net")) { a = a.replace(".azurewebsites.net", "") }; var b = document.getElementById("depCenterLink"); b.setAttribute("href", b.getAttribute("href") + "&sitename=" + a); loc() } catch (d) { } }</script>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="navbar-brand ">
+            <div class="container pl-4 ml-5"><img
+                    src="https://appservice.azureedge.net/images/app-service/v4/azurelogo.svg" width="270" height="108"
+                    alt="" /></div>
+        </div>
+    </nav>
+    <div class="container-fluid mr-2 mt-5 pt-5">
+        <div class="row">
+            <div class="col-xs-12 col-sm-12 d-block d-lg-none d-xl-none d-md-block d-sm-block d-xs-block">
+                <div class="text-center"><img src="https://appservice.azureedge.net/images/app-service/v4/web.svg" />
+                </div>
+            </div>
+            <div class="pl-5 ml-5 col-xl-5 col-lg-5 col-md-10 col-sm-11 col-xs-11">
+                <div class="container-fluid">
+                    <div class="row">
+                        <h2 id="upRunning">Your web app is running and waiting for your content</h2>
+                    </div>
+                    <div class="row mt-4 pt-4">
+                        <div id="appIsLive" style="font-size:16px;width: 516px;">Your web app is live, but we don’t have
+                            your content yet. If you’ve already deployed, it could take up to 5 minutes for your content
+                            to show up, so come back soon.</div>
+                    </div>
+                    <div class="row mt-4">
+                        <h5 id="supporting" class="mt-5"><img height="50" width="50"
+                                src="https://appservice.azureedge.net/images/linux-landing-page/v4/built-php.svg" /> Built with PHP</h5>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-5 col-lg-5 col-md-12 d-none d-lg-block">
+                <div class="text-left"><img src="https://appservice.azureedge.net/images/app-service/v4/web.svg" />
+                </div>
+            </div>
+            <div class="col-xl-1 col-lg-1 col-md-1"></div>
+        </div>
+        <div class="row mt-4">
+            <div class="container-fluid">
+                <div class="row mt-3">
+                    <div class="pl-5 ml-5 col-md-2 mt-4">
+                        <p><span id="haventDeployed">Haven’t deployed yet?</span><br /><span id="useDCenter">Use the
+                                deployment center to publish code or set up continuous deployment.</span><br /><a
+                                id="depCenterLink" href="https://go.microsoft.com/fwlink/?linkid=2057852"><button
+                                    class="btn btn-primary mt-4" type="submit" id="deplCenter">Deployment
+                                    center</button></a></p>
+                    </div>
+                    <div class="pl-5 ml-5 col-md-2 mt-4">
+                        <p><span id="newWebSite">Starting a new web site?</span><br /><span id="followQS">Follow our
+                                Quickstart guide to get a web app ready quickly.</span><br /><a
+                                href="https://go.microsoft.com/fwlink/?linkid=2084231"><button
+                                    class="btn btn-primary mt-4" type="submit" id="quickStart">Quickstart</button></a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
