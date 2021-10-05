@@ -3,7 +3,7 @@
 # values from ImageBuilder/GenerateDockerFiles/dockerFilesGenerateTask.yml
 artifactStagingDirectory="output/DockerFiles"
 baseImageName="mcr.microsoft.com/oryx"
-baseImageVersion="20210928.1" # change me as needed
+baseImageVersion="20211005.1" # change me as needed
 appSvcGitUrl="https://github.com/Azure-App-Service"
 configDir="Config"
 
