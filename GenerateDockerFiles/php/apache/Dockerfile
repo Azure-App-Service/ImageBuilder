@@ -55,6 +55,10 @@ RUN { \
    echo '<FilesMatch "\.(?i:ph([[p]?[0-9]*|tm[l]?))$">'; \
    echo '   SetHandler application/x-httpd-php'; \
    echo '</FilesMatch>'; \
+   echo '<DirectoryMatch "^/.*/\.git/">'; \
+   echo '   Order deny,allow'; \
+   echo '   Deny from all'; \
+   echo '</DirectoryMatch>'; \
    echo 'EnableMMAP Off'; \
    echo 'EnableSendfile Off'; \
 } >> /etc/apache2/apache2.conf

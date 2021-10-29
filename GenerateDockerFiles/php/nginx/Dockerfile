@@ -18,7 +18,7 @@ RUN if [[ "$PHP_VERSION" == "5.6" || "$PHP_VERSION" == "7.0" ]] ; then \
         apt-get install -y libmcrypt-dev \
         && docker-php-ext-install mcrypt; \
     fi
-    
+
 RUN chmod 755 /bin/init_container.sh \
     && mkdir -p /home/LogFiles/ \
     && echo "root:Docker!" | chpasswd \
@@ -43,7 +43,6 @@ COPY sshd_config /etc/ssh/
 ENV WEBSITE_ROLE_INSTANCE_ID localRoleInstance
 ENV WEBSITE_INSTANCE_ID localInstance
 ENV PATH ${PATH}:/home/site/wwwroot
-
 
 RUN sed -i "s/access_log \/var\/log\/nginx\/access.log;/access_log off;/g" /etc/nginx/nginx.conf
 RUN sed -i "s/error_log \/var\/log\/nginx\/error.log;/error_log \/dev\/stderr;/g" /etc/nginx/nginx.conf
