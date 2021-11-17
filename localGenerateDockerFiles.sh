@@ -3,7 +3,7 @@
 # values from ImageBuilder/GenerateDockerFiles/dockerFilesGenerateTask.yml
 artifactStagingDirectory="output/DockerFiles"
 baseImageName="mcr.microsoft.com/oryx"
-baseImageVersion="20211025.1" # change me as needed
+baseImageVersion="20211108.2" # change me as needed
 appSvcGitUrl="https://github.com/Azure-App-Service"
 configDir="Config"
 
@@ -33,6 +33,11 @@ GenerateDockerFiles/php/generateDockerfiles.sh $artifactStagingDirectory $baseIm
 chmod u+x GenerateDockerFiles/ruby/generateDockerfiles.sh
 GenerateDockerFiles/ruby/generateDockerfiles.sh $artifactStagingDirectory $appSvcGitUrl $configDir
 
+#Generate Wordpress images
+chmod u+x GenerateDockerFiles/wordpress/generateDockerfiles.sh
+GenerateDockerFiles/wordpress/generateDockerfiles.sh $artifactStagingDirectory $configDir
+
 # Generate KuduLite Docker Files
 chmod u+x GenerateDockerFiles/KuduLite/generateDockerfiles.sh 
 GenerateDockerFiles/KuduLite/generateDockerfiles.sh $artifactStagingDirectory $baseImageName $baseImageVersion $appSvcGitUrl $configDir
+

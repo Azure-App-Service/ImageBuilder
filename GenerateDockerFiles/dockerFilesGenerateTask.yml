@@ -2,7 +2,7 @@ parameters:
   ascName: WAWS_Container_Images
   acrName: wawsimages.azurecr.io
   baseImageName: "mcr.microsoft.com/oryx"
-  baseImageVersion: "20211025.1"
+  baseImageVersion: "20211108.2"
   appSvcGitUrl: "https://github.com/Azure-App-Service"
   kuduliteInternalRepo: $(KUDU_REPO)
 
@@ -66,6 +66,12 @@ steps:
   inputs:
     scriptPath: ./GenerateDockerFiles/ruby/generateDockerfiles.sh
     args: $(Build.ArtifactStagingDirectory) ${{ parameters.appSvcGitUrl }} $(System.DefaultWorkingDirectory)/Config
+
+- task: ShellScript@2
+  displayName: 'Generate Wordpress Docker Files'
+  inputs:
+    scriptPath: ./GenerateDockerFiles/wordpress/generateDockerfiles.sh
+    args: $(Build.ArtifactStagingDirectory) $(System.DefaultWorkingDirectory)/Config
 
 - task: ShellScript@2
   displayName: 'Generate KuduLite Docker Files'

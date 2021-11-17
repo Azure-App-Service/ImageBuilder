@@ -34,11 +34,22 @@ function buildDockerImage()
                 then
                     STACK_MOD="php"
                 fi
+                
+                if [[ $STACK = "wordpress" ]]
+                then
+                    STACK_MOD="wordpress-alpine-php"
+                fi
+
+		local TAG_MOD="${TAG}_${PIPELINE_BUILD_NUMBER}"
+		if [[ $STACK = "wordpress" && ( $TAG = "latest"  ||  $TAG = "latest_7.4" ) ]]; then
+			TAG_MOD="${TAG}"
+		fi
+
                 # Build Image Tags are converted to lower case because docker doesn't accept upper case tags
-                local MCRRepoTagUpperCase="${WAWS_IMAGE_REPO_NAME}/public/appsvc/${STACK_MOD}:${TAG}_${PIPELINE_BUILD_NUMBER}"
+                local MCRRepoTagUpperCase="${WAWS_IMAGE_REPO_NAME}/public/appsvc/${STACK_MOD}:${TAG_MOD}"
                 local MCRRepoTag="${MCRRepoTagUpperCase,,}"
-                local appSvcDockerfilePath="${SYSTEM_ARTIFACTS_DIR}/${STACK}/GitRepo/${STACK_VERSION}/Dockerfile" 
-                local BuildVerRepoTagUpperCase="${WAWS_IMAGE_REPO_NAME}/${STACK_MOD}:${TAG}_${PIPELINE_BUILD_NUMBER}"
+                local appSvcDockerfilePath="${SYSTEM_ARTIFACTS_DIR}/${STACK}/GitRepo/${STACK_VERSION}/Dockerfile"
+                local BuildVerRepoTagUpperCase="${WAWS_IMAGE_REPO_NAME}/${STACK_MOD}:${TAG_MOD}"
                 local BuildVerRepoTag="${BuildVerRepoTagUpperCase,,}"
 
                 echo "Listing artifacts dir"
@@ -47,7 +58,6 @@ function buildDockerImage()
                 ls "${SYSTEM_ARTIFACTS_DIR}/${STACK}/GitRepo/${STACK_VERSION}"
                 cd "${SYSTEM_ARTIFACTS_DIR}/${STACK}/GitRepo/${STACK_VERSION}"
 
-                echo
                 echo "Building test image with tag '$BuildVerRepoTag' and file $appSvcDockerfilePath..."
 
                 # php-xdebug depends of published images

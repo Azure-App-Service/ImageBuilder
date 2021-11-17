@@ -26,6 +26,9 @@ BuildAndTagImages/build.sh $DockerFileDir appsvctest "Config" $BuildNumber $Stac
 StackName="ruby"
 BuildAndTagImages/build.sh $DockerFileDir appsvctest "Config" $BuildNumber $StackName "PullRequest" "GitRepo" $BuildNumber
 
+StackName="wordpress"
+BuildAndTagImages/build.sh $DockerFileDir appsvctest "Config" $BuildNumber $StackName "PullRequest" "GitRepo" $BuildNumber
+
 StackName="KuduLite"
 BuildAndTagImages/build.sh $DockerFileDir appsvctest "Config" $BuildNumber $StackName "PullRequest" "GitRepo" $BuildNumber
 
