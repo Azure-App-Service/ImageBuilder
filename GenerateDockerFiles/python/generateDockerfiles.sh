@@ -39,10 +39,13 @@ function generateDockerFiles()
         rm -rf "$CURR_VERSION_DIRECTORY"
         mkdir -p "$CURR_VERSION_DIRECTORY"
         cp -R ${DIR}/${STACK_VERSION_TEMPLATE_DIR}/* "$CURR_VERSION_DIRECTORY"
+        if [ -d "$DIR/common" ]; then
+            cp -R ${DIR}/common/ $CURR_VERSION_DIRECTORY
+        fi
 
         # Replace placeholders, changing sed delimeter since '/' is used in path
         sed -i "s|BASE_IMAGE_NAME_PLACEHOLDER|$BASE_IMAGE_NAME|g" "$TARGET_DOCKERFILE"
-    
+
         echo "Done."
 
     done < "$stackVersionsMapFilePath"

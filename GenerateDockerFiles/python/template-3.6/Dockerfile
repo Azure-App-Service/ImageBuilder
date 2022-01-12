@@ -45,6 +45,12 @@ COPY hostingstart.html /opt/defaultsite
 COPY hostingstart_dep.html /opt/defaultsite
 COPY application.py /opt/defaultsite
 
+#code profiler options
+RUN mkdir -p /opt/startup/code_profiler
+COPY common/code_profiler/code-profiler-not-available.sh /opt/startup/code_profiler/code-profiler-not-available.sh
+RUN echo "alias vizviewer=/opt/startup/code_profiler/code-profiler-not-available.sh" >>/root/.bashrc \
+    && echo "alias code-profiler=/opt/startup/code_profiler/code-profiler-not-available.sh" >>/root/.bashrc
+
 # configure startup
 RUN chmod -R 777 /opt/startup
 COPY entrypoint.py /usr/local/bin

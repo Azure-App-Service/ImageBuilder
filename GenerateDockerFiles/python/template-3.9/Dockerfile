@@ -45,6 +45,17 @@ COPY hostingstart.html /opt/defaultsite
 COPY hostingstart_dep.html /opt/defaultsite
 COPY application.py /opt/defaultsite
 
+# gunicorn custom config
+COPY gunicorn.conf.py /opt/startup
+
+#code profiler options
+ENV PYTHON_USE_GUNICORN_CONFIG_FROM_PATH "/opt/startup/gunicorn.conf.py"
+ENV PYTHONPATH "${PYTHONPATH}:/opt/startup/code_profiler"
+RUN mkdir -p /opt/startup/code_profiler
+COPY common/code_profiler/ /opt/startup/code_profiler/
+RUN echo "alias vizviewer=/opt/startup/code_profiler/vizviewer.sh" >>/root/.bashrc \
+    && cat '/opt/startup/code_profiler/collect_trace.sh' >>/root/.bashrc 
+
 # configure startup
 RUN chmod -R 777 /opt/startup
 COPY entrypoint.py /usr/local/bin
