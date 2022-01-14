@@ -7,6 +7,57 @@ php -v
 # if defined, assume the container is running on Azure
 AZURE_DETECTED=$WEBSITES_ENABLE_APP_SERVICE_STORAGE
 
+
+update_php_config() {
+	local CONFIG_FILE="${1}"
+	local PARAM_NAME="${2}"
+	local PARAM_VALUE="${3}"
+	local VALUE_TYPE="${4}"
+	local PARAM_UPPER_BOUND="${5}"
+
+	if [[ -e $CONFIG_FILE && $PARAM_VALUE ]]; then
+		local FINAL_PARAM_VALUE
+
+		if [[ "$VALUE_TYPE" == "NUM" && $PARAM_VALUE =~ ^[0-9]+$ && $PARAM_UPPER_BOUND =~ ^[0-9]+$ ]]; then
+
+			if [[ "$PARAM_VALUE" -le "$PARAM_UPPER_BOUND" ]]; then
+				FINAL_PARAM_VALUE=$PARAM_VALUE
+			else
+				FINAL_PARAM_VALUE=$PARAM_UPPER_BOUND
+			fi
+
+		elif [[ "$VALUE_TYPE" == "MEM" && $PARAM_VALUE =~ ^[0-9]+M$ && $PARAM_UPPER_BOUND =~ ^[0-9]+M$ ]]; then
+
+			if [[ "${PARAM_VALUE::-1}" -le "${PARAM_UPPER_BOUND::-1}" ]]; then
+				FINAL_PARAM_VALUE=$PARAM_VALUE
+			else
+				FINAL_PARAM_VALUE=$PARAM_UPPER_BOUND
+			fi
+
+		elif [[ "$VALUE_TYPE" == "TOGGLE" ]] && [[ "$PARAM_VALUE" == "On" || "$PARAM_VALUE" == "Off" ]]; then
+			FINAL_PARAM_VALUE=$PARAM_VALUE
+		fi
+
+
+		if [[ $FINAL_PARAM_VALUE ]]; then
+			echo "updating php config value "$PARAM_NAME
+			sed -i "s/.*$PARAM_NAME.*/$PARAM_NAME = $FINAL_PARAM_VALUE/" $CONFIG_FILE
+		fi
+	fi
+}
+
+#Updating php configuration values
+if [[ -e $PHP_CUSTOM_CONF_FILE ]]; then
+    update_php_config $PHP_CUSTOM_CONF_FILE "file_uploads" $FILE_UPLOADS "TOGGLE"
+    update_php_config $PHP_CUSTOM_CONF_FILE "memory_limit" $PHP_MEMORY_LIMIT "MEM" $UB_PHP_MEMORY_LIMIT
+    update_php_config $PHP_CUSTOM_CONF_FILE "upload_max_filesize" $UPLOAD_MAX_FILESIZE "MEM" $UB_UPLOAD_MAX_FILESIZE
+    update_php_config $PHP_CUSTOM_CONF_FILE "post_max_size" $POST_MAX_SIZE "MEM" $UB_POST_MAX_SIZE
+    update_php_config $PHP_CUSTOM_CONF_FILE "max_execution_time" $MAX_EXECUTION_TIME "NUM" $UB_MAX_EXECUTION_TIME
+    update_php_config $PHP_CUSTOM_CONF_FILE "max_input_time" $MAX_INPUT_TIME "NUM" $UB_MAX_INPUT_TIME
+    update_php_config $PHP_CUSTOM_CONF_FILE "max_input_vars" $MAX_INPUT_VARS "NUM" $UB_MAX_INPUT_VARS
+fi
+
+
 setup_wordpress(){
 	if ! [ -e wp-includes/version.php ]; then
         echo "INFO: There in no wordpress, going to GIT pull...:"
@@ -33,9 +84,27 @@ setup_wordpress(){
 	        git branch --track $GIT_BRANCH origin/$GIT_BRANCH && git checkout $GIT_BRANCH
 	    fi
 
-	#remove .git
+        #remove .git
         rm  -rf $WORDPRESS_HOME/.git
         
+        echo "INFO: Installing WordPress..."
+        wp core install --url=$WEBSITE_HOSTNAME --title="${WORDPRESS_TITLE}" --admin_user=$WORDPRESS_ADMIN_USER --admin_password=$WORDPRESS_ADMIN_PASSWORD --admin_email=$WORDPRESS_ADMIN_EMAIL --skip-email --path=$WORDPRESS_HOME --allow-root
+        wp rewrite structure '/%year%/%monthnum%/%day%/%postname%/' --path=$WORDPRESS_HOME --allow-root
+        wp option set rss_user_excerpt 1 --path=$WORDPRESS_HOME --allow-root
+        wp option set page_comments 1 --path=$WORDPRESS_HOME --allow-root
+
+        wp plugin install w3-total-cache --activate --path=$WORDPRESS_HOME --allow-root
+        wp w3-total-cache import $WORDPRESS_SOURCE/w3tc-config.json --path=$WORDPRESS_HOME --allow-root
+
+        wp plugin install wp-smushit --activate --path=$WORDPRESS_HOME --allow-root
+        wp option set skip-smush-setup 1 --path=$WORDPRESS_HOME --allow-root
+        wp option patch update wp-smush-settings auto 1 --path=$WORDPRESS_HOME --allow-root
+        wp option patch update wp-smush-settings lossy 0 --path=$WORDPRESS_HOME --allow-root
+        wp option patch update wp-smush-settings strip_exif 1 --path=$WORDPRESS_HOME --allow-root
+        wp option patch update wp-smush-settings original 1 --path=$WORDPRESS_HOME --allow-root
+        wp option patch update wp-smush-settings lazy_load 0 --path=$WORDPRESS_HOME --allow-root
+        wp option patch update wp-smush-settings usage 0 --path=$WORDPRESS_HOME --allow-root
+
     else
         echo "INFO: Wordpress already exists, no need to GIT pull again."
     fi
@@ -75,9 +144,13 @@ fi
 #     echo "INFO: Permalink setting is exist!"
 # fi
 
+
+
 # setup server root
-echo "chown for "$WORDPRESS_HOME 
-chown -R nginx-nginx $WORDPRESS_HOME
+if [ ! $AZURE_DETECTED ]; then 
+    echo "INFO: NOT in Azure, chown for "$WORDPRESS_HOME 
+    chown -R nginx:nginx $WORDPRESS_HOME
+fi
 
 echo "Starting Redis ..."
 redis-server &
@@ -90,8 +163,8 @@ fi
 test ! -d "$SUPERVISOR_LOG_DIR" && echo "INFO: $SUPERVISOR_LOG_DIR not found. creating ..." && mkdir -p "$SUPERVISOR_LOG_DIR"
 test ! -d "$NGINX_LOG_DIR" && echo "INFO: Log folder for nginx/php not found. creating..." && mkdir -p "$NGINX_LOG_DIR"
 test ! -e /home/50x.html && echo "INFO: 50x file not found. createing..." && cp /usr/share/nginx/html/50x.html /home/50x.html
-test -d "/home/etc/nginx" && mv /etc/nginx /etc/nginx-bak && ln -s /home/etc/nginx /etc/nginx
-test ! -d "home/etc/nginx" && mkdir -p /home/etc && mv /etc/nginx /home/etc/nginx && ln -s /home/etc/nginx /etc/nginx
+test -d "/home/etc/nginx" && echo "/home/etc/nginx exists.." && ln -s /home/etc/nginx /etc/nginx && ln -sf /usr/lib/nginx/modules /home/etc/nginx/modules
+test ! -d "/home/etc/nginx" && mkdir -p /home/etc && cp -R /etc/nginx /home/etc/ && rm -rf /etc/nginx && ln -s /home/etc/nginx /etc/nginx && ln -sf /usr/lib/nginx/modules /home/etc/nginx/modules
 
 
 echo "INFO: creating /run/php/php-fpm.sock ..."

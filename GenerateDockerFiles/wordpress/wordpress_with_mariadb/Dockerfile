@@ -13,6 +13,14 @@ ENV NGINX_LOG_DIR "/home/LogFiles/nginx"
 ENV PHP_HOME "/usr/local/etc/php"
 ENV PHP_CONF_DIR $PHP_HOME
 ENV PHP_CONF_FILE $PHP_CONF_DIR"/php.ini"
+ENV PHP_CUSTOM_CONF_FILE $PHP_CONF_DIR"/conf.d/uploads.ini"
+#Upper bounds of php configs
+ENV UB_PHP_MEMORY_LIMIT 512M
+ENV UB_UPLOAD_MAX_FILESIZE 256M
+ENV UB_POST_MAX_SIZE 256M
+ENV UB_MAX_EXECUTION_TIME 120
+ENV UB_MAX_INPUT_TIME 120
+ENV UB_MAX_INPUT_VARS 10000
 # mariadb
 ENV MARIADB_DATA_DIR "/home/data/mysql"
 ENV MARIADB_LOG_DIR "/home/LogFiles/mysql"
@@ -74,6 +82,10 @@ RUN set -ex \
             libxslt-dev                     \    
     && docker-php-source extract \
     && pecl install xdebug-beta apcu \
+    && pecl install imagick \
+    && docker-php-ext-enable imagick \
+    && docker-php-ext-install exif \
+    && docker-php-ext-install bcmath \
     && docker-php-ext-install -j "$(nproc)" \
 	    mysqli \
 		opcache \
@@ -293,6 +305,7 @@ RUN set -ex \
 # Download and Install
 # ~. tools
 # 1. redis
+# 2. wp-cli
 # ====================
 RUN set -ex \
     # --------
@@ -324,6 +337,12 @@ RUN set -ex \
 	&& apk add --virtual .wordpress-phpexts-rundeps $runDeps \
 	&& apk del .build-deps \
 	&& docker-php-source delete \
+	# ----------
+	# 2. wp-cli tool
+	# ----------
+	&& curl -L -o /tmp/wp-cli.phar https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar \
+	&& chmod +x /tmp/wp-cli.phar \
+	&& mv /tmp/wp-cli.phar /usr/local/bin/wp \
 	# ----------
 	# ~. upgrade/clean up
 	# ----------
