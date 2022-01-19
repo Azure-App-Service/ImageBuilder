@@ -87,6 +87,33 @@ function buildDockerImage()
                 echo $MCRRepoTag >> $SYSTEM_ARTIFACTS_DIR/${STACK}builtImageList
             done
         done < "$CONFIG_DIR/${STACK}VersionTemplateMap.txt"
+    elif [[ $STACK = "DiagnosticServer" ]]; then
+        # DiagnosticServer Image
+        echo "Building DiagnosticServer"
+        local BuildVerRepoTagUpperCase="${WAWS_IMAGE_REPO_NAME}/${STACK}:${IMG_TAG}"
+        local BuildVerRepoTag="${BuildVerRepoTagUpperCase,,}"
+        local MCRRepoTagUpperCase="${WAWS_IMAGE_REPO_NAME}/public/appsvc/${STACK}:${IMG_TAG}"
+        local MCRRepoTag="${MCRRepoTagUpperCase,,}"
+        local appSvcDockerfilePath="${SYSTEM_ARTIFACTS_DIR}/${STACK}/${FILES_ROOT_PATH}/Dockerfile"
+
+        echo "Listing artifacts dir"
+        ls "${SYSTEM_ARTIFACTS_DIR}"
+        echo "Listing stacks dir"
+        cd "${SYSTEM_ARTIFACTS_DIR}/${STACK}/${FILES_ROOT_PATH}"
+        echo
+        echo "Building test image with tag '$BuildVerRepoTag' and file $appSvcDockerfilePath..."
+        echo docker build -t "$BuildVerRepoTag" -f "$appSvcDockerfilePath" .
+        docker build -t "$BuildVerRepoTag" -f "$appSvcDockerfilePath" .
+        docker tag $BuildVerRepoTag $MCRRepoTag
+
+        # only push the images if merging to the master
+        if [ "$BUILD_REASON" != "PullRequest" ]; then
+            docker push $BuildVerRepoTag
+            docker push $MCRRepoTag
+        fi
+
+        echo $MCRRepoTag >> $SYSTEM_ARTIFACTS_DIR/${STACK}builtImageList
+
     else
         # KuduLite Image, add single image support
 

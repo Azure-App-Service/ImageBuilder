@@ -5,6 +5,7 @@ parameters:
   baseImageVersion: "20211207.1"
   appSvcGitUrl: "https://github.com/Azure-App-Service"
   kuduliteInternalRepo: $(KUDU_REPO)
+  DiagnosticServerInternalRepo: $(DiagnosticServer_REPO)
 
 steps:
 - script: |
@@ -85,6 +86,11 @@ steps:
     scriptPath: ./GenerateDockerFiles/staticsite/generateDockerfiles.sh
     args: $(Build.ArtifactStagingDirectory) ${{ parameters.baseImageName }} ${{ parameters.baseImageVersion }} ${{ parameters.appSvcGitUrl }} $(System.DefaultWorkingDirectory)/Config
 
+- task: ShellScript@2
+  displayName: 'Generate DiagnosticServer Docker Files'
+  inputs:
+    scriptPath: ./GenerateDockerFiles/DiagnosticServer/generateDockerfiles.sh
+    args: $(Build.ArtifactStagingDirectory) ${{ parameters.DiagnosticServerInternalRepo }} $(System.DefaultWorkingDirectory)/Config
 
 
     # Publish Build Artifacts

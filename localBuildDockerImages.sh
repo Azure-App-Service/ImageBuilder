@@ -35,3 +35,6 @@ BuildAndTagImages/build.sh $DockerFileDir appsvctest "Config" $BuildNumber $Stac
 # dynamic install
 StackName="KuduLite"
 BuildAndTagImages/build.sh $DockerFileDir appsvctest "Config" $BuildNumber $StackName "PullRequest" "GitRepo-DynInst" dynamic-$BuildNumber
+
+StackName="DiagnosticServer"
+BuildAndTagImages/build.sh $DockerFileDir appsvctest "Config" $BuildNumber $StackName "PullRequest" "GitRepo" $BuildNumber
