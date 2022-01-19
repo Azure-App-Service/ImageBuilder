@@ -41,6 +41,3 @@ GenerateDockerFiles/wordpress/generateDockerfiles.sh $artifactStagingDirectory $
 chmod u+x GenerateDockerFiles/KuduLite/generateDockerfiles.sh 
 GenerateDockerFiles/KuduLite/generateDockerfiles.sh $artifactStagingDirectory $baseImageName $baseImageVersion $appSvcGitUrl $configDir
 
-# Generate DiagnosticServer Docker Files
-chmod u+x GenerateDockerFiles/DiagnosticServer/generateDockerfiles.sh
-GenerateDockerFiles/DiagnosticServer/generateDockerfiles.sh $artifactStagingDirectory $configDir
