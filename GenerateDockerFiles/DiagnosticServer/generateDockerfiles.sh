@@ -13,9 +13,6 @@ declare -r DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 # Directory for Generated Docker Files
 declare -r STACK_NAME="DiagnosticServer"
 declare -r SYSTEM_ARTIFACTS_DIR="$1"
-#declare -r BASE_IMAGE_REPO_NAME="$2/build"
-#declare -r BASE_IMAGE_VERSION_STREAM_FEED="$3"                     # Base Image Version; Oryx Version : 20190819.2
-# TODO Remove hard-coded REPO
 declare -r APPSVC_DIAGSERVER_REPO="$2"
 declare -r CONFIG_DIR="$3"                                         # ${Current_Repo}/Config
 declare -r METADATA_FILE="$SYSTEM_ARTIFACTS_DIR/metadata"

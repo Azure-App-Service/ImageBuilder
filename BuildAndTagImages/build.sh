@@ -106,7 +106,7 @@ function buildDockerImage()
         docker build -t "$BuildVerRepoTag" -f "$appSvcDockerfilePath" .
         docker tag $BuildVerRepoTag $MCRRepoTag
 
-        # only push the images if merging to the master
+        # only push the images if merging to the main branch
         if [ "$BUILD_REASON" != "PullRequest" ]; then
             docker push $BuildVerRepoTag
             docker push $MCRRepoTag
