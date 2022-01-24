@@ -10,7 +10,7 @@ jobs:
 - job: Job_TagAppSvcTestImages
   displayName: Publish Images
   pool:
-    vmImage: ubuntu-16.04
+    vmImage: ubuntu-18.04
   timeoutInMinutes: 100
   steps:
   - task: Docker@1
