@@ -24,11 +24,11 @@ do
     chmod 666 $NGINX_LOG_DIR/error.log
     chmod 666 $NGINX_LOG_DIR/php-error.log
     chmod 666 $SUPERVISOR_LOG_DIR/supervisord.log
-    test ! -d "/home/LogFiles/olddir" && echo "INFO: Log folder for nginx/php not found. creating..." && mkdir -p "/home/LogFiles/olddir"
+    test ! -d "/var/log/olddir" && echo "INFO: Log folder for nginx olddir not found. creating..." && mkdir -p "/var/log/olddir"
     if [ ! $WEBSITES_ENABLE_APP_SERVICE_STORAGE ]; then
         echo "INFO: NOT in Azure, chown for $NGINX_LOG_DIR"  
         chown -R nginx:nginx $NGINX_LOG_DIR
-        chown -R nginx:nginx /home/LogFiles/olddir 
+        chown -R nginx:nginx /var/log/olddir 
     fi
     sleep 3s
 done 
