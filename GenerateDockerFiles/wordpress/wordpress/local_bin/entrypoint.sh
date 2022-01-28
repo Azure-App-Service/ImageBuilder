@@ -138,9 +138,11 @@ setup_wordpress() {
             echo "W3TC_PLUGIN_CONFIG_UPDATED" >> $WORDPRESS_LOCK_FILE
         fi
     fi
-
-    # Although in AZURE, we still need below chown cmd.
-    chown -R nginx:nginx $WORDPRESS_HOME
+    
+    if [ ! $AZURE_DETECTED ]; then 
+	    echo "INFO: NOT in Azure, chown for "$WORDPRESS_HOME 
+	    chown -R nginx:nginx $WORDPRESS_HOME
+    fi
 }
 
 if ! [[ $SKIP_WP_INSTALLATION ]] || ! [[ "$SKIP_WP_INSTALLATION" == "true" 
