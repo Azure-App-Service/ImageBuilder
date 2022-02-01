@@ -96,7 +96,7 @@ setup_wordpress() {
     #first time Database connection check
     if [ $(grep "GIT_PULL_COMPLETED" $WORDPRESS_LOCK_FILE) ] &&  [ ! $(grep "DB_CONNECTION_ESTABLISHED" $WORDPRESS_LOCK_FILE) ]; then
     	try_count=1
-	while [ $try_count -le 40 ]
+	while [ $try_count -le 200 ]
 	do 
 	    db_status=`wp db check --allow-root --quick --ssl=true|grep "Success: Database checked"|wc -l`
 	    if(( $db_status>=1 ))
