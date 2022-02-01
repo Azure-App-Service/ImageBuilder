@@ -1,6 +1,3 @@
-import constants
-import code_profiler_installer as cpi
-from pathlib import Path
 import logging
 import logging.handlers
 import threading
@@ -16,34 +13,19 @@ appService_connections_set_mutex = threading.Lock()
 appService_logs_queue = mp.Queue()
 appService_logs_flag = mp.Value(ctypes.c_bool, False)
 
-class appService_customQueueHandler(logging.handlers.QueueHandler) :
-
+class appService_customQueueHandler(logging.Handler) :
+    
     def __init__(self, queue, flag):
-        logging.handlers.QueueHandler.__init__(self, queue)
+        logging.Handler.__init__(self)
+        self.queue = queue
         self.flag = flag
-
+    
     def emit(self, record):
         if(self.flag.value) :
             try:
-                self.enqueue(self.prepare(record))
+                self.queue.put_nowait(self.format(record))
             except Exception:
                 self.handleError(record)
-
-
-try:
-    Path(constants.CODE_PROFILER_LOGS_DIR).mkdir(parents=True, exist_ok=True)
-    pidfile = constants.PID_FILE_LOCATION
-    
-except Exception as e:
-    print(f"Gunicorn was unable to set the pidfile path due to the exception : {e}")
-
-def post_worker_init(worker):
-    try:
-        profiler_installer = cpi.CodeProfilerInstaller()
-        profiler_installer.add_signal_handlers()              
-            
-    except Exception as e:
-        print(e)
 
 def on_starting(server):
 
@@ -74,7 +56,7 @@ def LogsServer() :
     try :
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         sock.bind(appService_server_address)
-        sock.listen()
+        sock.listen(1)
     except Exception as e:
         print(e)
         return
@@ -103,7 +85,7 @@ def LogsCollector() :
 
          for conn in connections :
              try :
-                 conn.sendall((str(log.getMessage())+"\n").encode())
+                 conn.sendall((log+"\n").encode())
              except :
                  bad_connections.add(conn)
 
