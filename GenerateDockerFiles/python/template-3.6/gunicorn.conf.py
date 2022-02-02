@@ -30,7 +30,7 @@ def on_starting(server):
     
     root_logger = logging.getLogger()
     handler = appService_customQueueHandler(appService_logs_queue, appService_logs_flag)
-    formatter = logging.Formatter('%(asctime)s %(message)s %(process)d')
+    formatter = logging.Formatter("{ 'time' : '%(asctime)s', 'level': '%(levelname)s', 'message' : '%(message)s', 'pid' : '%(process)d' }")
     handler.setLevel(logging.INFO)
     handler.setFormatter(formatter)
     root_logger.addHandler(handler)
