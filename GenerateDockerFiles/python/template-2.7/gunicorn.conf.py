@@ -91,4 +91,3 @@ def LogsCollector() :
 
          with appService_connections_set_mutex :
              appService_connections_set = appService_connections_set.difference(bad_connections)
-

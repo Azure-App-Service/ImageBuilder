@@ -42,7 +42,7 @@ COPY init_container.sh /opt/startup/init_container.sh
 
 # gunicorn custom config
 COPY gunicorn.conf.py /opt/startup
-#ENV PYTHON_USE_GUNICORN_CONFIG_FROM_PATH "/opt/startup/gunicorn.conf.py"
+ENV PYTHON_USE_GUNICORN_CONFIG_FROM_PATH "/opt/startup/gunicorn.conf.py"
 
 # setup default site
 RUN mkdir /opt/defaultsite

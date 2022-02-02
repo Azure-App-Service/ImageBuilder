@@ -47,7 +47,7 @@ COPY application.py /opt/defaultsite
 
 # gunicorn custom config
 COPY gunicorn.conf.py /opt/startup
-#ENV PYTHON_USE_GUNICORN_CONFIG_FROM_PATH "/opt/startup/gunicorn.conf.py"
+ENV PYTHON_USE_GUNICORN_CONFIG_FROM_PATH "/opt/startup/gunicorn.conf.py"
 
 #code profiler options
 RUN mkdir -p /opt/startup/code_profiler
