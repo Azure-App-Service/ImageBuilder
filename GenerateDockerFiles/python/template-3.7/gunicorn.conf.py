@@ -9,7 +9,10 @@ import os
 import multiprocessing as mp
 import ctypes
 
-appService_server_address = "/tmp/appserviceapplogs_" + os.environ["WEBSITE_ROLE_INSTANCE_ID"]
+try :
+    appService_server_address = "/tmp/appserviceapplogs_" + os.environ["WEBSITE_ROLE_INSTANCE_ID"]
+except :
+    appService_server_address = "/tmp/appserviceapplogs_0"
 appService_connections_set = set()
 appService_connections_set_mutex = threading.Lock()
 
