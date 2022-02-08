@@ -5,3 +5,5 @@
 7.4-apache-xdebug,7.4-apache,7-apache-xdebug,7.4-apache-xdebug
 8.0-apache-xdebug,8.0-apache,8.0-apache-xdebug,8.0-apache-xdebug
 8.0-fpm-xdebug,8.0-fpm,8.0-fpm-xdebug,8.0-fpm-xdebug|latest-xdebug
+8.1-apache-xdebug,8.1-apache,8.1-apache-xdebug,8.1-apache-xdebug
+8.1-fpm-xdebug,8.1-fpm,8.1-fpm-xdebug,8.1-fpm-xdebug

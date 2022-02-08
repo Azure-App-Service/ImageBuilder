@@ -118,57 +118,104 @@ setup_phpmyadmin(){
     fi 
 }    
 
-setup_wordpress(){
-	if ! [ -e wp-includes/version.php ]; then
-        echo "INFO: There in no wordpress, going to GIT pull...:"
+setup_wordpress() {
+    if [ ! -d $WORDPRESS_LOCK_HOME ]; then
+        mkdir -p $WORDPRESS_LOCK_HOME
+    fi
+
+    if [ ! -e $WORDPRESS_LOCK_FILE ]; then
+        echo "INFO: creating a new WordPress status file ..."
+        touch $WORDPRESS_LOCK_FILE;
+    else 
+        echo "INFO: Found an existing WordPress status file ..."
+    fi
+
+    if [ ! $(grep "GIT_PULL_COMPLETED" $WORDPRESS_LOCK_FILE) ]; then
+        local IS_GIT_PULL_SUCCESS="FALSE"
         while [ -d $WORDPRESS_HOME ]
         do
             mkdir -p /home/bak
             mv $WORDPRESS_HOME /home/bak/wordpress_bak$(date +%s)            
         done
+        
         GIT_REPO=${GIT_REPO:-https://github.com/azureappserviceoss/wordpress-azure}
 	    GIT_BRANCH=${GIT_BRANCH:-linux-appservice}
 	    echo "INFO: ++++++++++++++++++++++++++++++++++++++++++++++++++:"
 	    echo "REPO: "$GIT_REPO
 	    echo "BRANCH: "$GIT_BRANCH
 	    echo "INFO: ++++++++++++++++++++++++++++++++++++++++++++++++++:"
-    
-	    echo "INFO: Clone from "$GIT_REPO		
-        git clone $GIT_REPO $WORDPRESS_HOME	&& cd $WORDPRESS_HOME
-	    if [ "$GIT_BRANCH" != "master" ];then
-		    echo "INFO: Checkout to "$GIT_BRANCH
-		    git fetch origin
-	        git branch --track $GIT_BRANCH origin/$GIT_BRANCH && git checkout $GIT_BRANCH
-	    fi
+
+        if git clone $GIT_REPO $WORDPRESS_HOME && cd $WORDPRESS_HOME; then
+            if [ "$GIT_BRANCH" != "master" ]; then
+                if git fetch origin \
+                && git branch --track $GIT_BRANCH origin/$GIT_BRANCH \
+                && git checkout $GIT_BRANCH; then
+                    IS_GIT_PULL_SUCCESS="TRUE"
+                fi
+            else
+                IS_GIT_PULL_SUCCESS="TRUE"
+            fi
+        fi
 
         #remove .git
         rm  -rf $WORDPRESS_HOME/.git
-        
-        echo "INFO: Installing WordPress..."
-        wp core install --url=$WEBSITE_HOSTNAME --title="${WORDPRESS_TITLE}" --admin_user=$WORDPRESS_ADMIN_USER --admin_password=$WORDPRESS_ADMIN_PASSWORD --admin_email=$WORDPRESS_ADMIN_EMAIL --skip-email --path=$WORDPRESS_HOME --allow-root
-        wp rewrite structure '/%year%/%monthnum%/%day%/%postname%/' --path=$WORDPRESS_HOME --allow-root
-        wp option set rss_user_excerpt 1 --path=$WORDPRESS_HOME --allow-root
-        wp option set page_comments 1 --path=$WORDPRESS_HOME --allow-root
 
-        echo "INFO: Installing W3TC plugin..."
-        wp plugin install w3-total-cache --activate --path=$WORDPRESS_HOME --allow-root
-        wp w3-total-cache import $WORDPRESS_SOURCE/w3tc-config.json --path=$WORDPRESS_HOME --allow-root
-
-        echo "INFO: Installing Smush plugin..."
-        wp plugin install wp-smushit --activate --path=$WORDPRESS_HOME --allow-root
-        wp option set skip-smush-setup 1 --path=$WORDPRESS_HOME --allow-root
-        wp option patch update wp-smush-settings auto 1 --path=$WORDPRESS_HOME --allow-root
-        wp option patch update wp-smush-settings lossy 0 --path=$WORDPRESS_HOME --allow-root
-        wp option patch update wp-smush-settings strip_exif 1 --path=$WORDPRESS_HOME --allow-root
-        wp option patch update wp-smush-settings original 1 --path=$WORDPRESS_HOME --allow-root
-        wp option patch update wp-smush-settings lazy_load 0 --path=$WORDPRESS_HOME --allow-root
-        wp option patch update wp-smush-settings usage 0 --path=$WORDPRESS_HOME --allow-root
-
-    else
-        echo "INFO: There is one wordpress exist, no need to GIT pull again."
+        if [ "$IS_GIT_PULL_SUCCESS" == "TRUE" ]; then
+            echo "GIT_PULL_COMPLETED" >> $WORDPRESS_LOCK_FILE
+        fi
     fi
-	
-	# Although in AZURE, we still need below chown cmd.
+
+    if [ $(grep "GIT_PULL_COMPLETED" $WORDPRESS_LOCK_FILE) ] &&  [ ! $(grep "WP_INSTALLATION_COMPLETED" $WORDPRESS_LOCK_FILE) ]; then
+        if wp core install --url=$WEBSITE_HOSTNAME --title="${WORDPRESS_TITLE}" --admin_user=$WORDPRESS_ADMIN_USER --admin_password=$WORDPRESS_ADMIN_PASSWORD --admin_email=$WORDPRESS_ADMIN_EMAIL --skip-email --path=$WORDPRESS_HOME --allow-root; then
+            echo "WP_INSTALLATION_COMPLETED" >> $WORDPRESS_LOCK_FILE
+        fi
+    fi
+
+    if [ $(grep "WP_INSTALLATION_COMPLETED" $WORDPRESS_LOCK_FILE) ] && [ ! $(grep "WP_CONFIG_UPDATED" $WORDPRESS_LOCK_FILE) ]; then
+        if wp rewrite structure '/%year%/%monthnum%/%day%/%postname%/' --path=$WORDPRESS_HOME --allow-root \
+        && wp option set rss_user_excerpt 1 --path=$WORDPRESS_HOME --allow-root \
+        && wp option set page_comments 1 --path=$WORDPRESS_HOME --allow-root \
+        && wp option update blogdescription "" --path=$WORDPRESS_HOME --allow-root \
+        && wp option set auto_update_core_major disabled --path=$WORDPRESS_HOME --allow-root \
+        && wp option set auto_update_core_minor disabled --path=$WORDPRESS_HOME --allow-root \
+        && wp option set auto_update_core_dev disabled --path=$WORDPRESS_HOME --allow-root; then
+            echo "WP_CONFIG_UPDATED" >> $WORDPRESS_LOCK_FILE
+        fi
+    fi
+
+    if [ $(grep "WP_INSTALLATION_COMPLETED" $WORDPRESS_LOCK_FILE) ] && [ ! $(grep "SMUSH_PLUGIN_INSTALLED" $WORDPRESS_LOCK_FILE) ]; then
+        if wp plugin install wp-smushit --force --activate --path=$WORDPRESS_HOME --allow-root; then
+            echo "SMUSH_PLUGIN_INSTALLED" >> $WORDPRESS_LOCK_FILE
+        fi
+    fi
+
+    if [ $(grep "SMUSH_PLUGIN_INSTALLED" $WORDPRESS_LOCK_FILE) ] && [ ! $(grep "SMUSH_PLUGIN_CONFIG_UPDATED" $WORDPRESS_LOCK_FILE) ]; then
+        if wp option set skip-smush-setup 1 --path=$WORDPRESS_HOME --allow-root \
+        && wp option patch update wp-smush-settings auto 1 --path=$WORDPRESS_HOME --allow-root \
+        && wp option patch update wp-smush-settings lossy 0 --path=$WORDPRESS_HOME --allow-root \
+        && wp option patch update wp-smush-settings strip_exif 1 --path=$WORDPRESS_HOME --allow-root \
+        && wp option patch update wp-smush-settings original 1 --path=$WORDPRESS_HOME --allow-root \
+        && wp option patch update wp-smush-settings lazy_load 0 --path=$WORDPRESS_HOME --allow-root \
+        && wp option patch update wp-smush-settings usage 0 --path=$WORDPRESS_HOME --allow-root; then
+            echo "SMUSH_PLUGIN_CONFIG_UPDATED" >> $WORDPRESS_LOCK_FILE
+        fi
+    fi
+
+    if [ $(grep "WP_INSTALLATION_COMPLETED" $WORDPRESS_LOCK_FILE) ] && [ ! $(grep "W3TC_PLUGIN_INSTALLED" $WORDPRESS_LOCK_FILE) ]; then
+        if wp plugin install w3-total-cache --force --activate --path=$WORDPRESS_HOME --allow-root; then
+            echo "W3TC_PLUGIN_INSTALLED" >> $WORDPRESS_LOCK_FILE
+        fi
+    fi
+
+    if [ $(grep "W3TC_PLUGIN_INSTALLED" $WORDPRESS_LOCK_FILE) ] && [ ! $(grep "W3TC_PLUGIN_CONFIG_UPDATED" $WORDPRESS_LOCK_FILE) ]; then
+        if mkdir -p $WORDPRESS_HOME/wp-content/cache/tmp \
+        && mkdir -p $WORDPRESS_HOME/wp-content/w3tc-config \
+        && wp w3-total-cache import $WORDPRESS_SOURCE/w3tc-config.json --path=$WORDPRESS_HOME --allow-root; then
+            echo "W3TC_PLUGIN_CONFIG_UPDATED" >> $WORDPRESS_LOCK_FILE
+        fi
+    fi
+
+    # Although in AZURE, we still need below chown cmd.
     chown -R nginx:nginx $WORDPRESS_HOME
 }
 
@@ -216,15 +263,20 @@ if [ "${DATABASE_TYPE}" == "local" ]; then
 	mysql -u root -e "GRANT ALL ON \`$DATABASE_NAME\`.* TO \`$DATABASE_USERNAME\`@\`$DATABASE_HOST\` IDENTIFIED BY '$DATABASE_PASSWORD'; FLUSH PRIVILEGES;"        
 fi
 
-# That wp-config.php doesn't exist means WordPress is not installed/configured yet.
-if [ ! -e "$WORDPRESS_HOME/wp-config.php" ] || [ ! -e "$WORDPRESS_HOME/wp-includes/version.php" ]; then
-	echo "INFO: $WORDPRESS_HOME/wp-config.php or wp-includes/version.php not found."
-	echo "Installing WordPress ..."
-	setup_wordpress
-	echo "Wordpress Setup Complete ..."
+if ! [[ $SKIP_WP_INSTALLATION ]] || ! [[ "$SKIP_WP_INSTALLATION" == "true" 
+    || "$SKIP_WP_INSTALLATION" == "TRUE" || "$SKIP_WP_INSTALLATION" == "True" ]]; then
+
+    if [ ! -e "$WORDPRESS_HOME/wp-config.php" ] || [ ! -e "$WORDPRESS_HOME/wp-includes/version.php" ]; then
+        echo "INFO: $WORDPRESS_HOME/wp-config.php or wp-includes/version.php not found."
+        rm -f $WORDPRESS_LOCK_FILE
+    fi
+
+    setup_wordpress
+else 
+    echo "INFO: Skipping WP installation..."
 fi
 
-if [  -e "$WORDPRESS_HOME/wp-config.php" ]; then
+if [ -e "$WORDPRESS_HOME/wp-config.php" ]; then
     echo "INFO: Check SSL Setting..."    
     SSL_DETECTED=$(grep "\$_SERVER\['HTTPS'\] = 'on';" $WORDPRESS_HOME/wp-config.php)
     if [ ! SSL_DETECTED ];then
@@ -234,18 +286,6 @@ if [  -e "$WORDPRESS_HOME/wp-config.php" ]; then
         echo "INFO: SSL Setting is exist!"
     fi
 fi
-
-# set permalink as 'Day and Name' and default, it has best performance with nginx re_write config.
-# PERMALINK_DETECTED=$(grep "\$wp_rewrite->set_permalink_structure" $WORDPRESS_HOME/wp-settings.php)
-# if [ ! $PERMALINK_DETECTED ];then
-#     echo "INFO: Set Permalink..."
-#     init_string="do_action( 'init' );"
-#     sed -i "/$init_string/r $WORDPRESS_SOURCE/permalink-settings.txt" $WORDPRESS_HOME/wp-settings.php
-#     init_row=$(grep "$init_string" -n $WORDPRESS_HOME/wp-settings.php | head -n 1 | cut -d ":" -f1)
-#     sed -i "${init_row}d" $WORDPRESS_HOME/wp-settings.php
-# else
-#     echo "INFO: Permalink setting is exist!"
-# fi
 
 # setup server root
 if [ ! $AZURE_DETECTED ]; then 
@@ -275,6 +315,7 @@ if [ "$DATABASE_TYPE" == "local" ]; then
     fi
 fi
 
+
 #Updating php configuration values
 if [[ -e $PHP_CUSTOM_CONF_FILE ]]; then
     echo "INFO: Updating PHP configurations..."
@@ -286,6 +327,7 @@ if [[ -e $PHP_CUSTOM_CONF_FILE ]]; then
     update_php_config $PHP_CUSTOM_CONF_FILE "max_input_time" $MAX_INPUT_TIME "NUM" $UB_MAX_INPUT_TIME
     update_php_config $PHP_CUSTOM_CONF_FILE "max_input_vars" $MAX_INPUT_VARS "NUM" $UB_MAX_INPUT_VARS
 fi
+
 
 echo "INFO: creating /run/php/php-fpm.sock ..."
 test -e /run/php/php-fpm.sock && rm -f /run/php/php-fpm.sock
