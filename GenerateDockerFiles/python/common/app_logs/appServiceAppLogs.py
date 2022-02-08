@@ -3,23 +3,20 @@ import logging.handlers
 import threading
 import socket
 import os
-from pathlib import Path
 import multiprocessing as mp
 import appServiceAppLogsConstants as constants
 
 class CustomQueueHandler(logging.Handler) :
     
-    def __init__(self, queue, flag):
+    def __init__(self, queue):
         logging.Handler.__init__(self)
         self.queue = queue
-        self.flag = flag
     
     def emit(self, record):
-        if(self.flag.value) :
-            try:
-                self.queue.put_nowait(self.format(record))
-            except Exception:
-                self.handleError(record)
+        try:
+            self.queue.put_nowait(self.format(record))
+        except Exception:
+            self.handleError(record)
 
 class AppLogsVariables :
     
@@ -31,7 +28,9 @@ class AppLogsVariables :
         except :
             self.server_address = "/tmp/appserviceapplogs_0"
     
-        Path(constants.APP_LOGGER_LOGS_DIR).mkdir(parents=True, exist_ok=True)
+        if(not os.path.isdir(constants.APP_LOGGER_LOGS_DIR)) :
+            os.makedirs(constants.APP_LOGGER_LOGS_DIR)
+            
         self.connections_set = set()
         self.connections_set_mutex = threading.Lock()
 
@@ -89,7 +88,7 @@ def workerLogHandlerRegisterer() :
         appService_appLogsVars.eventStartLogging.wait()
     
         root_logger = logging.getLogger()
-        handler = CustomQueueHandler(appService_appLogsVars.logs_queue, appService_appLogsVars.logs_flag)
+        handler = CustomQueueHandler(appService_appLogsVars.logs_queue)
         formatter = logging.Formatter("{ 'time' : '%(asctime)s', 'level': '%(levelname)s', 'message' : '%(message)s', 'pid' : '%(process)d' }")
         handler.setLevel(logging.INFO)
         handler.setFormatter(formatter)
@@ -156,7 +155,7 @@ def logsCollector() :
     
              with appService_appLogsVars.connections_set_mutex :
                  connections = appService_appLogsVars.connections_set.copy()
-                 if(len(connections) == 0 and appService_appLogsVars.logs_flag.value) :
+                 if(len(connections) == 0 and appService_appLogsVars.eventStartLogging.is_set()) :
                      appService_appLogsVars.logger.debug("Resetting flags")
                      appService_appLogsVars.eventStartLogging.clear()
                      appService_appLogsVars.eventStopLogging.set()
