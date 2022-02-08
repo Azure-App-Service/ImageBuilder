@@ -8,7 +8,7 @@ ENV SSH_PASSWD "root:Docker!"
 ENV SSH_PORT 2222
 #nginx
 ENV NGINX_VERSION 1.20.1
-ENV NGINX_LOG_DIR "/home/LogFiles/nginx"
+ENV NGINX_LOG_DIR "/var/log/nginx"
 #php
 ENV PHP_HOME "/usr/local/etc/php"
 ENV PHP_CONF_DIR $PHP_HOME
@@ -26,7 +26,7 @@ ENV PHPREDIS_VERSION 5.3.4
 #Web Site Home
 ENV HOME_SITE "/home/site/wwwroot"
 # supervisor
-ENV SUPERVISOR_LOG_DIR "/home/LogFiles/supervisor"
+ENV SUPERVISOR_LOG_DIR "/var/log/supervisor"
 # wordpress
 ENV WORDPRESS_SOURCE "/usr/src/wordpress"
 ENV WORDPRESS_HOME "/home/site/wwwroot"
@@ -273,10 +273,8 @@ RUN set -ex \
 # RUN set -ex\    		
 	##
 	&& rm -rf /var/log/nginx \
-	&& ln -s $NGINX_LOG_DIR /var/log/nginx \
 	##
 	&& rm -rf /var/log/supervisor \
-	&& ln -s $SUPERVISOR_LOG_DIR /var/log/supervisor \
 	## Just take care of nginx and php logs
 	&& rm -rf /etc/logrotate.d \
 	&& mkdir -p /etc/logrotate.d 

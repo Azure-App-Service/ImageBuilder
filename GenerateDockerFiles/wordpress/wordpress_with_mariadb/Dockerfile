@@ -38,8 +38,11 @@ ENV SUPERVISOR_LOG_DIR "/home/LogFiles/supervisor"
 # wordpress
 ENV WORDPRESS_SOURCE "/usr/src/wordpress"
 ENV WORDPRESS_HOME "/home/site/wwwroot"
+ENV WORDPRESS_LOCK_HOME "/home/wp-locks"
+ENV WORDPRESS_LOCK_FILE $WORDPRESS_LOCK_HOME"/wp_deployment_status.txt"
 #
 ENV DOCKER_BUILD_HOME "/dockerbuild"
+
 #
 # --------
 # ~. tools
