@@ -3,7 +3,7 @@ import logging.handlers
 import threading
 import socket
 import os
-import ctypes
+from pathlib import Path
 import multiprocessing as mp
 import appServiceAppLogsConstants as constants
 
@@ -31,6 +31,7 @@ class AppLogsVariables :
         except :
             self.server_address = "/tmp/appserviceapplogs_0"
     
+        Path(constants.APP_LOGGER_LOGS_DIR).mkdir(parents=True, exist_ok=True)
         self.connections_set = set()
         self.connections_set_mutex = threading.Lock()
 
@@ -83,6 +84,8 @@ def workerLogHandlerRegisterer() :
 
     while True :
         
+        appService_appLogsVars.logger.debug("Waiting for the logs flag to be set")
+        
         appService_appLogsVars.eventStartLogging.wait()
     
         root_logger = logging.getLogger()
@@ -129,6 +132,7 @@ def logsServer() :
             appService_appLogsVars.logger.debug("Received Logs Request")
             with appService_appLogsVars.connections_set_mutex :
                 appService_appLogsVars.connections_set.add(connection)
+                appService_appLogsVars.logger.debug("Setting flags")
                 appService_appLogsVars.eventStopLogging.clear()
                 appService_appLogsVars.eventStartLogging.set()
                 
@@ -153,6 +157,7 @@ def logsCollector() :
              with appService_appLogsVars.connections_set_mutex :
                  connections = appService_appLogsVars.connections_set.copy()
                  if(len(connections) == 0 and appService_appLogsVars.logs_flag.value) :
+                     appService_appLogsVars.logger.debug("Resetting flags")
                      appService_appLogsVars.eventStartLogging.clear()
                      appService_appLogsVars.eventStopLogging.set()
                      continue
@@ -160,6 +165,7 @@ def logsCollector() :
              for conn in connections :
                  try :
                      conn.sendall((log+"\n").encode())
+                     appService_appLogsVars.logger.debug("Sent logs")
                  except :
                      bad_connections.add(conn)
     

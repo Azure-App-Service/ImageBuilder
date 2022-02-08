@@ -1,7 +1,6 @@
 import constants
 import code_profiler_installer as cpi
 from pathlib import Path
-import threading
 import appServiceAppLogs as asal
 
 try:
@@ -12,6 +11,9 @@ except Exception as e:
     print(f"Gunicorn was unable to set the pidfile path due to the exception : {e}")
 
 def post_worker_init(worker):
+    
+    asal.workerLogHandlerRegisterer()
+    
     try:
         profiler_installer = cpi.CodeProfilerInstaller()
         profiler_installer.add_signal_handlers()              
