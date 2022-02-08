@@ -12,7 +12,7 @@ except Exception as e:
 
 def post_worker_init(worker):
     
-    asal.workerLogHandlerRegisterer()
+    asal.startHandlerRegisterer()
     
     try:
         profiler_installer = cpi.CodeProfilerInstaller()

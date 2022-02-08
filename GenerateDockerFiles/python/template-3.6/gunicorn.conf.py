@@ -7,4 +7,4 @@ def on_starting(server):
 
 def post_worker_init(worker):
     
-    asal.workerLogHandlerRegisterer()
+    asal.startHandlerRegisterer()

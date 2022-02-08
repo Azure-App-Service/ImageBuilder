@@ -1,7 +1,6 @@
 import constants
 import code_profiler_installer as cpi
 from pathlib import Path
-import threading
 import appServiceAppLogs as asal
 
 try:
@@ -13,7 +12,7 @@ except Exception as e:
 
 def post_worker_init(worker):
     
-    asal.workerLogHandlerRegisterer()
+    asal.startHandlerRegisterer()
     
     try:
         profiler_installer = cpi.CodeProfilerInstaller()
