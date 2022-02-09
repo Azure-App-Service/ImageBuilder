@@ -1,4 +1,5 @@
-FROM BASE_IMAGE_NAME_PLACEHOLDER
+#FROM BASE_IMAGE_NAME_PLACEHOLDER
+FROM mcr.microsoft.com/oryx/dotnetcore:5.0-20220207.1
 LABEL maintainer="Azure App Services Container Images <appsvc-images@microsoft.com>"
 
 RUN apt-get update \
@@ -15,6 +16,7 @@ RUN apt-get update \
         tcpdump \
         iproute2 \
         nano \
+        cron \
     && apt-get upgrade -y openssl \
     && rm -rf /var/lib/apt/lists/*
 
@@ -44,6 +46,9 @@ RUN mkdir -p /opt/startup \
    && rm -rf /tmp/*
 
 COPY dotnet_monitor_config.json /dotnet_monitor_config.json
+COPY run-dotnet-monitor.sh /run-dotnet-monitor.sh
+
+COPY run-diag.sh /run-diag.sh
 
 ENV PORT 8080
 ENV SSH_PORT 2222
