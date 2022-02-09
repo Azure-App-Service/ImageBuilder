@@ -1,3 +1,0 @@
-is_global = true
-build_property.RootNamespace = hostingstart
-build_property.ProjectDir = c:\wagit\ImageBuilder\GenerateDockerFiles\dotnetcore\SampleApps\1.1\src\
