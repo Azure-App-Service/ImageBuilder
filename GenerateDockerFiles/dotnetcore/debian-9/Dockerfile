@@ -1,5 +1,4 @@
-#FROM BASE_IMAGE_NAME_PLACEHOLDER
-FROM mcr.microsoft.com/oryx/dotnetcore:5.0-20220207.1
+FROM BASE_IMAGE_NAME_PLACEHOLDER
 LABEL maintainer="Azure App Services Container Images <appsvc-images@microsoft.com>"
 
 RUN apt-get update \
