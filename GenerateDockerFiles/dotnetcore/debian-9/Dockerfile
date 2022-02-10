@@ -46,8 +46,10 @@ RUN mkdir -p /opt/startup \
 
 COPY dotnet_monitor_config.json /dotnet_monitor_config.json
 COPY run-dotnet-monitor.sh /run-dotnet-monitor.sh
+RUN chmod +x /run-dotnet-monitor.sh
 
 COPY run-diag.sh /run-diag.sh
+RUN chmod +x /run-diag.sh
 
 ENV PORT 8080
 ENV SSH_PORT 2222
