@@ -48,12 +48,12 @@ fi
 echo '' > /etc/cron.d/diag-cron
 if [ "$USE_DIAG_SERVER" = true ]; then
     /run-diag.sh > /dev/null
-    echo "*/5 * * * * /run-dotnet-monitor.sh > /dev/null" >> /etc/cron.d/diag-cron
+    echo "*/5 * * * * /run-diag.sh > /dev/null" >> /etc/cron.d/diag-cron
 fi
 
 if [ "$USE_DOTNET_MONITOR" = true ]; then
     /run-dotnet-monitor.sh > /dev/null
-    echo "*/5 * * * * /run-diag.sh > /dev/null" >> /etc/cron.d/diag-cron
+    echo "*/5 * * * * /run-dotnet-monitor.sh > /dev/null" >> /etc/cron.d/diag-cron
 fi
 
 if [[ "$USE_DOTNET_MONITOR" = true || "$USE_DIAG_SERVER" = true ]]; then
