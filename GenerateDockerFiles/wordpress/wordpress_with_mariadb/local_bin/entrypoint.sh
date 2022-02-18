@@ -215,6 +215,13 @@ setup_wordpress() {
         fi
     fi
 
+    if [ $CDN_ENABLED ] && [ $(grep "W3TC_PLUGIN_CONFIG_UPDATED" $WORDPRESS_LOCK_FILE) ] && [ ! $(grep "CDN_CONFIGURATION_COMPLETE" $WORDPRESS_LOCK_FILE) ]; then  
+        #start atd daemon
+        service atd start
+        service atd status
+        echo '/usr/local/bin/w3tc_cdn_config.sh' | at now +10 minutes
+    fi    
+
     # Although in AZURE, we still need below chown cmd.
     chown -R nginx:nginx $WORDPRESS_HOME
 }

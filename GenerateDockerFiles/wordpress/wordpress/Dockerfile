@@ -103,6 +103,11 @@ RUN set -ex \
 # ------
     && apk add --no-cache openssh-server \
     && echo "$SSH_PASSWD" | chpasswd \
+# ------
+# at and jq
+# ------
+    && apk add --no-cache at \
+    && apk add --no-cache jq \
 #---------------
 # openrc service
 #---------------
