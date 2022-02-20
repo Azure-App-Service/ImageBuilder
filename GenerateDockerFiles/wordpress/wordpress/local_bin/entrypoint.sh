@@ -142,12 +142,21 @@ setup_wordpress() {
             echo "W3TC_PLUGIN_CONFIG_UPDATED" >> $WORDPRESS_LOCK_FILE
         fi
     fi
+
+    if [ $CDN_ENABLED ] && [ $(grep "W3TC_PLUGIN_CONFIG_UPDATED" $WORDPRESS_LOCK_FILE) ] && [ ! $(grep "CDN_CONFIGURATION_COMPLETE" $WORDPRESS_LOCK_FILE) ]; then  
+        #start atd daemon
+        service atd start
+        service atd status
+        echo '/usr/local/bin/w3tc_cdn_config.sh' | at now +10 minutes
+    fi  	
     
     if [ ! $AZURE_DETECTED ]; then 
 	    echo "INFO: NOT in Azure, chown for "$WORDPRESS_HOME 
 	    chown -R nginx:nginx $WORDPRESS_HOME
     fi
 }
+
+echo "Setup openrc ..." && openrc && touch /run/openrc/softlevel
 
 if ! [[ $SKIP_WP_INSTALLATION ]] || ! [[ "$SKIP_WP_INSTALLATION" == "true" 
     || "$SKIP_WP_INSTALLATION" == "TRUE" || "$SKIP_WP_INSTALLATION" == "True" ]]; then
@@ -156,7 +165,7 @@ if ! [[ $SKIP_WP_INSTALLATION ]] || ! [[ "$SKIP_WP_INSTALLATION" == "true"
         echo "INFO: $WORDPRESS_HOME/wp-config.php or wp-includes/version.php not found."
         rm -f $WORDPRESS_LOCK_FILE
     fi
-
+    
     setup_wordpress
 else 
     echo "INFO: Skipping WP installation..."
@@ -185,13 +194,12 @@ fi
 #     echo "INFO: Permalink setting is exist!"
 # fi
 
-echo "Setup openrc ..." && openrc && touch /run/openrc/softlevel
-
 # setup server root
 if [ ! $AZURE_DETECTED ]; then 
     echo "INFO: NOT in Azure, chown for "$WORDPRESS_HOME 
     chown -R nginx:nginx $WORDPRESS_HOME
 fi
+
 
 # calculate Redis max memory 
 RAM_KB=$(grep MemTotal /proc/meminfo | awk '{print $2}')
