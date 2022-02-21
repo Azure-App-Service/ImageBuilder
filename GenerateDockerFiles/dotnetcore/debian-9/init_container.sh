@@ -46,7 +46,7 @@ if [ "$APP_SVC_RUN_FROM_COPY" = true ]; then
 fi
 
 echo '' > /etc/cron.d/diag-cron
-if [ "$USE_DIAG_SERVER" = true ]; then
+if [ "$WEBSITE_USE_DIAGNOSTIC_SERVER" != false ]; then
     /run-diag.sh > /dev/null
     echo "*/5 * * * * /run-diag.sh > /dev/null" >> /etc/cron.d/diag-cron
 fi
