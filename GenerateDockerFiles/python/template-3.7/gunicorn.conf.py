@@ -11,7 +11,6 @@ except Exception as e:
     print(f"Gunicorn was unable to set the pidfile path due to the exception : {e}")
 
 def post_worker_init(worker):
-    
     asal.startHandlerRegisterer()
     
     try:
@@ -22,5 +21,4 @@ def post_worker_init(worker):
         print(e)
 
 def on_starting(server):
-
     asal.initAppLogs()
