@@ -18,6 +18,7 @@ RUN apt-get update \
         tcpdump \
         iproute2 \
         nano \
+        cron \
     && pip install --upgrade pip \
     && pip install subprocess32 \
     && pip install gunicorn \ 
