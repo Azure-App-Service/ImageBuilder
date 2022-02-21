@@ -25,6 +25,9 @@ RUN rm -f /etc/ssh/sshd_config
 COPY startup /opt/startup
 COPY hostingstart.html /opt/startup
 
+COPY run-diag.sh /run-diag.sh
+RUN chmod +x /run-diag.sh
+
 # configure startup
 RUN mkdir -p /tmp
 COPY sshd_config /etc/ssh/

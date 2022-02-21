@@ -27,6 +27,15 @@ eval $(printenv | sed -n "s/^\([^=]\+\)=\(.*\)$/export \1=\2/p" | sed 's/"/\\\"/
 sed -i "s/SSH_PORT/$SSH_PORT/g" /etc/ssh/sshd_config
 /usr/sbin/sshd
 
+echo '' > /etc/cron.d/diag-cron
+if [ "$WEBSITE_USE_DIAGNOSTIC_SERVER" != false ]; then
+    /run-diag.sh > /dev/null
+    echo "*/5 * * * * /run-diag.sh > /dev/null" >> /etc/cron.d/diag-cron
+    chmod 0644 /etc/cron.d/diag-cron
+    crontab /etc/cron.d/diag-cron
+    /etc/init.d/cron start
+fi
+
 STARTUP_COMMAND_PATH="/opt/startup/startup.sh"
 ORYX_ARGS="create-script -appPath /home/site/wwwroot -output $STARTUP_COMMAND_PATH -defaultApp=/opt/startup/default-static-site.js -userStartupCommand '$@'"
 
