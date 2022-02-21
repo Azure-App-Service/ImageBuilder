@@ -19,6 +19,7 @@ RUN apt-get update \
         tcpdump \
         iproute2 \
         nano \
+        cron \
     && pip install --upgrade pip \
     && pip install gunicorn \ 
     && pip install virtualenv \
@@ -30,6 +31,9 @@ WORKDIR ${HOME_SITE}
 EXPOSE 8000
 ENV PORT 8000
 ENV SSH_PORT 2222
+
+COPY common/run-diag.sh /run-diag.sh
+RUN chmod +x /run-diag.sh
 
 # setup SSH and acitvate virtual env on ssh into container
 RUN mkdir -p /home/LogFiles \
