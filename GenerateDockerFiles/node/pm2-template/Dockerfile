@@ -25,7 +25,7 @@ RUN rm -f /etc/ssh/sshd_config
 COPY startup /opt/startup
 COPY hostingstart.html /opt/startup
 
-COPY common/run-diag.sh /run-diag.sh
+COPY run-diag.sh /run-diag.sh
 RUN chmod +x /run-diag.sh
 
 # configure startup
