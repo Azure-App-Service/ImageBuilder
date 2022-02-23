@@ -56,7 +56,7 @@ if [ "$USE_DOTNET_MONITOR" = true ]; then
     echo "*/5 * * * * /run-dotnet-monitor.sh > /dev/null" >> /etc/cron.d/diag-cron
 fi
 
-if [[ "$USE_DOTNET_MONITOR" = true || "$USE_DIAG_SERVER" = true ]]; then
+if [[ "$WEBSITE_USE_DIAGNOSTIC_SERVER" != false || "$USE_DIAG_SERVER" = true ]]; then
     chmod 0644 /etc/cron.d/diag-cron
     crontab /etc/cron.d/diag-cron
     /etc/init.d/cron start
