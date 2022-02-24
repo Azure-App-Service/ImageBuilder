@@ -26,7 +26,7 @@ done
 
 artifactStagingDirectory="output/DockerFiles"
 baseImageName="${oryxBaseImageName:="mcr.microsoft.com/oryx"}" 
-baseImageVersion="${oryxTagName:="20220223.4"}" # change me as needed
+baseImageVersion="${oryxTagName:="20220224.2"}" # change me as needed
 appSvcGitUrl="https://github.com/Azure-App-Service"
 configDir="Config"
 
