@@ -19,17 +19,22 @@ RUN apt-get update \
         tcpdump \
         iproute2 \
         nano \
+        cron \
     && pip install --upgrade pip \
     && pip install gunicorn \ 
     && pip install virtualenv \
     && pip install flask \
-    && pip install scandir 
+    && pip install scandir \
+    && pip install pathlib2
 
 WORKDIR ${HOME_SITE}
 
 EXPOSE 8000
 ENV PORT 8000
 ENV SSH_PORT 2222
+
+COPY common/run-diag.sh /run-diag.sh
+RUN chmod +x /run-diag.sh
 
 # setup SSH and acitvate virtual env on ssh into container
 RUN mkdir -p /home/LogFiles \
@@ -39,6 +44,15 @@ RUN mkdir -p /home/LogFiles \
 COPY sshd_config /etc/ssh/
 RUN mkdir -p /opt/startup
 COPY init_container.sh /opt/startup/init_container.sh
+
+# gunicorn custom config
+COPY gunicorn.conf.py /opt/startup
+ENV PYTHON_USE_GUNICORN_CONFIG_FROM_PATH "/opt/startup/gunicorn.conf.py"
+
+# setup appServiceAppLogs
+RUN mkdir -p /opt/startup/app_logs
+COPY common/app_logs/ /opt/startup/app_logs/
+ENV PYTHONPATH "${PYTHONPATH}:/opt/startup/app_logs"
 
 # setup default site
 RUN mkdir /opt/defaultsite

@@ -45,10 +45,21 @@ if [ "$APP_SVC_RUN_FROM_COPY" = true ]; then
     runFromPathArg="-runFromPath $runFromPath"
 fi
 
+echo '' > /etc/cron.d/diag-cron
+if [ "$WEBSITE_USE_DIAGNOSTIC_SERVER" != false ]; then
+    /run-diag.sh > /dev/null
+    echo "*/5 * * * * /run-diag.sh > /dev/null" >> /etc/cron.d/diag-cron
+fi
+
 if [ "$USE_DOTNET_MONITOR" = true ]; then
-    mkdir -p $HOME/.config/dotnet-monitor
-    cp /dotnet_monitor_config.json $HOME/.config/dotnet-monitor/settings.json
-    /opt/dotnetcore-tools/dotnet-monitor collect --urls "http://0.0.0.0:50051" --metrics true --metricUrls "http://0.0.0.0:50050" --no-auth > /dev/null 2>&1 &
+    /run-dotnet-monitor.sh > /dev/null
+    echo "*/5 * * * * /run-dotnet-monitor.sh > /dev/null" >> /etc/cron.d/diag-cron
+fi
+
+if [[ "$WEBSITE_USE_DIAGNOSTIC_SERVER" != false || "$USE_DIAG_SERVER" = true ]]; then
+    chmod 0644 /etc/cron.d/diag-cron
+    crontab /etc/cron.d/diag-cron
+    /etc/init.d/cron start
 fi
 
 oryxArgs="create-script -appPath $appPath -output $startupCommandPath -defaultAppFilePath $defaultAppPath \

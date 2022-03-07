@@ -1,37 +1,101 @@
 #!/bin/bash
+# Usage : Build and tag docker image for stacks locally
+# Note: If stackname is not specified, docker image for stacks would be build and tagged locally
+# $0 buildNumber [-s=<stack name>]
+# 
+# Example :
+# $0 testTag
+# $0 testTag -s python
+#
+
 BuildNumber=$1
 DockerFileDir=`pwd`"/output/DockerFiles"
-
+shift
 if [ -z "$BuildNumber" ]
 then
     echo "please supply a build number"
     exit
 fi
 
-StackName="node"
-BuildAndTagImages/build.sh $DockerFileDir appsvctest "Config" $BuildNumber $StackName "PullRequest" "GitRepo" $BuildNumber
+while getopts ":s:" opt; do
+  case $opt in
+    s) stackName="$OPTARG"
+    ;;        
+    \?) echo "Invalid option -$OPTARG" >&2
+        exit 1
+    ;;
+  esac
+done
 
-StackName="php"
-BuildAndTagImages/build.sh $DockerFileDir appsvctest "Config" $BuildNumber $StackName "PullRequest" "GitRepo" $BuildNumber
+echo "BuildNumber : $BuildNumber"
+echo "Stack       : $stackName"
+echo ""
 
-#StackName="php-xdebug"
-#BuildAndTagImages/build.sh $DockerFileDir appsvctest "Config" $BuildNumber $StackName "PullRequest" "GitRepo" $BuildNumber
+function buildAndTagImages()
+{
+    local stackName=$1
 
-StackName="python"
-BuildAndTagImages/build.sh $DockerFileDir appsvctest "Config" $BuildNumber $StackName "PullRequest" "GitRepo" $BuildNumber
+    local githubRepo=$2 ;
+    githubRepo="${githubRepo:="GitRepo"}" 
 
-StackName="dotnetcore"
-BuildAndTagImages/build.sh $DockerFileDir appsvctest "Config" $BuildNumber $StackName "PullRequest" "GitRepo" $BuildNumber
+    local buildNumber=$3  
+    buildNumber="${buildNumber:=BuildNumber}" 
 
-StackName="ruby"
-BuildAndTagImages/build.sh $DockerFileDir appsvctest "Config" $BuildNumber $StackName "PullRequest" "GitRepo" $BuildNumber
+    BuildAndTagImages/build.sh $DockerFileDir appsvctest "Config" $BuildNumber $stackName "PullRequest" $githubRepo $buildNumber
+}
 
-StackName="wordpress"
-BuildAndTagImages/build.sh $DockerFileDir appsvctest "Config" $BuildNumber $StackName "PullRequest" "GitRepo" $BuildNumber
 
-StackName="KuduLite"
-BuildAndTagImages/build.sh $DockerFileDir appsvctest "Config" $BuildNumber $StackName "PullRequest" "GitRepo" $BuildNumber
 
-# dynamic install
-StackName="KuduLite"
-BuildAndTagImages/build.sh $DockerFileDir appsvctest "Config" $BuildNumber $StackName "PullRequest" "GitRepo-DynInst" dynamic-$BuildNumber
+if [ -z "$stackName" ]
+then
+    echo "Building Images for all stacks"
+    buildAndTagImages "node"
+    buildAndTagImages "php"
+    buildAndTagImages "php-xdebug"
+    buildAndTagImages "python"
+    buildAndTagImages "dotnetcore"
+    buildAndTagImages "ruby"
+    buildAndTagImages "wordpress"
+    buildAndTagImages "kudulite"
+    buildAndTagImages "kudulite" "GitRepo-DynInst" dynamic-$BuildNumber
+    exit
+fi
+
+echo "Building and Tagging $stackName Images"
+case $stackName in
+
+  "node")
+    buildAndTagImages "node"
+    ;;
+
+  "dotnetcore")
+    buildAndTagImages "dotnetcore"
+    ;;
+
+  "python")
+    buildAndTagImages "python"
+    ;;
+
+  "php")
+    buildAndTagImages "php"
+    ;;
+
+  "ruby")
+    buildAndTagImages "ruby"
+    ;;
+
+  "wordpress")
+    buildAndTagImages "wordpress"
+    ;;
+
+  "kudulite")
+    buildAndTagImages "kudulite"
+    ;;
+
+  "dynamic")
+    buildAndTagImages "kudulite" "GitRepo-DynInst" dynamic-$BuildNumber
+    ;;
+
+  *)
+    echo "Unable to Build and Tag Images for stack : $stack"
+esac

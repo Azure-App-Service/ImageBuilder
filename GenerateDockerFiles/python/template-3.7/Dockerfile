@@ -18,6 +18,7 @@ RUN apt-get update \
         tcpdump \
         iproute2 \
         nano \
+        cron \
     && pip install --upgrade pip \
     && pip install subprocess32 \
     && pip install gunicorn \ 
@@ -29,6 +30,9 @@ WORKDIR ${HOME_SITE}
 EXPOSE 8000
 ENV PORT 8000
 ENV SSH_PORT 2222
+
+COPY common/run-diag.sh /run-diag.sh
+RUN chmod +x /run-diag.sh
 
 # setup SSH and acitvate virtual env on ssh into container
 RUN mkdir -p /home/LogFiles \
@@ -47,14 +51,19 @@ COPY application.py /opt/defaultsite
 
 # gunicorn custom config
 COPY gunicorn.conf.py /opt/startup
+ENV PYTHON_USE_GUNICORN_CONFIG_FROM_PATH "/opt/startup/gunicorn.conf.py"
+
+# setup appServiceAppLogs
+RUN mkdir -p /opt/startup/app_logs
+COPY common/app_logs/ /opt/startup/app_logs/
+ENV PYTHONPATH "${PYTHONPATH}:/opt/startup/app_logs"
 
 #code profiler options
-ENV PYTHON_USE_GUNICORN_CONFIG_FROM_PATH "/opt/startup/gunicorn.conf.py"
 ENV PYTHONPATH "${PYTHONPATH}:/opt/startup/code_profiler"
 RUN mkdir -p /opt/startup/code_profiler
 COPY common/code_profiler/ /opt/startup/code_profiler/
 RUN echo "alias vizviewer=/opt/startup/code_profiler/vizviewer.sh" >>/root/.bashrc \
-    && cat '/opt/startup/code_profiler/collect_trace.sh' >>/root/.bashrc 
+    && pip install /opt/startup/code_profiler/appsvc_code_profiler-1.0.0-py3-none-any.whl
 
 # configure startup
 RUN chmod -R 777 /opt/startup

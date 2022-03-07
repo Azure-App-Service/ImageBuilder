@@ -293,8 +293,23 @@ if [ ! $AZURE_DETECTED ]; then
     chown -R nginx:nginx $WORDPRESS_HOME
 fi
 
-echo "Starting Redis ..."
-redis-server &
+# calculate Redis max memory 
+RAM_KB=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+Redis_Mem_UpperLimit=$(($RAM_KB*2/10))
+Redis_Mem_KB=$(($RAM_KB/10))
+if [[ $REDIS_MAX_MEMORY_MB =~ ^[0-9][0-9]*$ ]]; then
+    if [[ $(($Redis_Mem_UpperLimit - $REDIS_MAX_MEMORY_MB*1024)) -ge 0 ]]; then 
+        Redis_Mem_KB=$(($REDIS_MAX_MEMORY_MB*1024))
+    else
+        Redis_Mem_KB=$(($Redis_Mem_UpperLimit))
+    fi
+else
+    echo "REDIS_MAX_MEMORY_MB must be an integer.."
+fi
+Redis_Mem_KB="${Redis_Mem_KB}KB"
+
+echo "Starting Redis with Max Memory: ${Redis_Mem_KB}"
+redis-server --maxmemory "$Redis_Mem_KB" --maxmemory-policy allkeys-lru &
 
 if [ ! $AZURE_DETECTED ]; then	
     echo "NOT in AZURE, Start crond, log rotate..."	
