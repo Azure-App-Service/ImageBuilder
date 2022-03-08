@@ -70,7 +70,7 @@ fi
 echo '' > /etc/cron.d/diag-cron
 if [ "$WEBSITE_USE_DIAGNOSTIC_SERVER" != false ]; then
     /run-diag.sh > /dev/null
-    echo "*/5 * * * * /run-diag.sh > /dev/null" >> /etc/cron.d/diag-cron
+    echo '*/5 * * * * bash -l -c "/run-diag.sh > /dev/null"' >> /etc/cron.d/diag-cron
     chmod 0644 /etc/cron.d/diag-cron
     crontab /etc/cron.d/diag-cron
     /etc/init.d/cron start
