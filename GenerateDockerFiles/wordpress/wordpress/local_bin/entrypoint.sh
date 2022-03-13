@@ -112,7 +112,10 @@ setup_wordpress() {
     fi
 
     if [ $(grep "WP_INSTALLATION_COMPLETED" $WORDPRESS_LOCK_FILE) ] && [ ! $(grep "SMUSH_PLUGIN_INSTALLED" $WORDPRESS_LOCK_FILE) ]; then
-        if wp plugin install wp-smushit --force --activate --path=$WORDPRESS_HOME --allow-root; then
+        wp plugin is-installed wp-smushit --path=$WORDPRESS_HOME --allow-root
+        if [ $? -eq 0 ]; then
+            echo "SMUSH_PLUGIN_INSTALLED" >> $WORDPRESS_LOCK_FILE
+        elif wp plugin install wp-smushit --force --activate --path=$WORDPRESS_HOME --allow-root; then
             echo "SMUSH_PLUGIN_INSTALLED" >> $WORDPRESS_LOCK_FILE
         fi
     fi
@@ -130,7 +133,10 @@ setup_wordpress() {
     fi
 
     if [ $(grep "WP_INSTALLATION_COMPLETED" $WORDPRESS_LOCK_FILE) ] && [ ! $(grep "W3TC_PLUGIN_INSTALLED" $WORDPRESS_LOCK_FILE) ]; then
-        if wp plugin install w3-total-cache --force --activate --path=$WORDPRESS_HOME --allow-root; then
+        wp plugin is-installed w3-total-cache --path=$WORDPRESS_HOME --allow-root
+        if [ $? -eq 0 ]; then
+            echo "W3TC_PLUGIN_INSTALLED" >> $WORDPRESS_LOCK_FILE
+        elif wp plugin install w3-total-cache --force --activate --path=$WORDPRESS_HOME --allow-root; then
             echo "W3TC_PLUGIN_INSTALLED" >> $WORDPRESS_LOCK_FILE
         fi
     fi
@@ -142,7 +148,26 @@ setup_wordpress() {
             echo "W3TC_PLUGIN_CONFIG_UPDATED" >> $WORDPRESS_LOCK_FILE
         fi
     fi
-
+    
+    if [ $BLOB_STORAGE_ENABLED ] && [ $(grep "WP_INSTALLATION_COMPLETED" $WORDPRESS_LOCK_FILE) ] && [ ! $(grep "BLOB_STORAGE_PLUGIN_INSTALLED" $WORDPRESS_LOCK_FILE) ]; then  
+        wp plugin is-installed windows-azure-storage --path=$WORDPRESS_HOME --allow-root
+        if [ $? -eq 0 ]; then
+            echo "BLOB_STORAGE_PLUGIN_INSTALLED" >> $WORDPRESS_LOCK_FILE
+        elif wp plugin install windows-azure-storage --force --activate --path=$WORDPRESS_HOME --allow-root; then
+            echo "BLOB_STORAGE_PLUGIN_INSTALLED" >> $WORDPRESS_LOCK_FILE
+        fi
+    fi
+    
+    if [ $BLOB_STORAGE_ENABLED ] && [ $(grep "BLOB_STORAGE_PLUGIN_INSTALLED" $WORDPRESS_LOCK_FILE) ] && [ ! $(grep "BLOB_STORAGE_CONFIG_UPDATED" $WORDPRESS_LOCK_FILE) ]; then  
+        if wp option update azure_storage_account_name $STORAGE_ACCOUNT_NAME  --path=$WORDPRESS_HOME --allow-root \
+        && wp option update azure_storage_account_primary_access_key $STORAGE_ACCOUNT_KEY  --path=$WORDPRESS_HOME --allow-root \
+        && wp option update default_azure_storage_account_container_name $BLOB_CONTAINER_NAME  --path=$WORDPRESS_HOME --allow-root \
+        && wp option update cname $BLOB_CNAME  --path=$WORDPRESS_HOME --allow-root \
+        && wp option update azure_storage_use_for_default_upload 1  --path=$WORDPRESS_HOME --allow-root; then
+            echo "BLOB_STORAGE_CONFIG_UPDATED" >> $WORDPRESS_LOCK_FILE
+        fi
+    fi    
+    
     if [ $CDN_ENABLED ] && [ $(grep "W3TC_PLUGIN_CONFIG_UPDATED" $WORDPRESS_LOCK_FILE) ] && [ ! $(grep "CDN_CONFIGURATION_COMPLETE" $WORDPRESS_LOCK_FILE) ]; then  
         #start atd daemon
         service atd start
