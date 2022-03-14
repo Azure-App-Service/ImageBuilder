@@ -67,7 +67,7 @@ setup_wordpress() {
         done
         
         GIT_REPO=${GIT_REPO:-https://github.com/azureappserviceoss/wordpress-azure}
-	    GIT_BRANCH=${GIT_BRANCH:-linux-appservice}
+	    GIT_BRANCH=${GIT_BRANCH:-saisubodh-dev}
 	    echo "INFO: ++++++++++++++++++++++++++++++++++++++++++++++++++:"
 	    echo "REPO: "$GIT_REPO
 	    echo "BRANCH: "$GIT_BRANCH
@@ -112,7 +112,9 @@ setup_wordpress() {
     fi
 
     if [ $(grep "WP_INSTALLATION_COMPLETED" $WORDPRESS_LOCK_FILE) ] && [ ! $(grep "SMUSH_PLUGIN_INSTALLED" $WORDPRESS_LOCK_FILE) ]; then
-        if wp plugin install wp-smushit --force --activate --path=$WORDPRESS_HOME --allow-root; then
+        if wp plugin is-installed wp-smushit --path=$WORDPRESS_HOME --allow-root; then
+            echo "SMUSH_PLUGIN_INSTALLED" >> $WORDPRESS_LOCK_FILE
+        elif wp plugin install wp-smushit --force --activate --path=$WORDPRESS_HOME --allow-root; then
             echo "SMUSH_PLUGIN_INSTALLED" >> $WORDPRESS_LOCK_FILE
         fi
     fi
@@ -130,7 +132,9 @@ setup_wordpress() {
     fi
 
     if [ $(grep "WP_INSTALLATION_COMPLETED" $WORDPRESS_LOCK_FILE) ] && [ ! $(grep "W3TC_PLUGIN_INSTALLED" $WORDPRESS_LOCK_FILE) ]; then
-        if wp plugin install w3-total-cache --force --activate --path=$WORDPRESS_HOME --allow-root; then
+        if wp plugin is-installed w3-total-cache --path=$WORDPRESS_HOME --allow-root; then
+            echo "W3TC_PLUGIN_INSTALLED" >> $WORDPRESS_LOCK_FILE
+        elif wp plugin install w3-total-cache --force --activate --path=$WORDPRESS_HOME --allow-root; then
             echo "W3TC_PLUGIN_INSTALLED" >> $WORDPRESS_LOCK_FILE
         fi
     fi
