@@ -67,7 +67,7 @@ setup_wordpress() {
         done
         
         GIT_REPO=${GIT_REPO:-https://github.com/azureappserviceoss/wordpress-azure}
-	    GIT_BRANCH=${GIT_BRANCH:-saisubodh-dev}
+	    GIT_BRANCH=${GIT_BRANCH:-linux-appservice}
 	    echo "INFO: ++++++++++++++++++++++++++++++++++++++++++++++++++:"
 	    echo "REPO: "$GIT_REPO
 	    echo "BRANCH: "$GIT_BRANCH
