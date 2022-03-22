@@ -71,10 +71,8 @@ setup_wordpress() {
         echo "INFO: Found an existing WordPress status file ..."
     fi
 
-    if [[ ! $BLOB_STORAGE_ENABLED && $(grep "W3TC_PLUGIN_CONFIG_UPDATED" $WORDPRESS_LOCK_FILE) ]] ||  [[ $BLOB_STORAGE_ENABLED &&  $(grep "BLOB_STORAGE_CONFIG_UPDATED" $WORDPRESS_LOCK_FILE) ]]; then
-        if [ ! $(grep "FIRST_TIME_SETUP_COMPLETED" $WORDPRESS_LOCK_FILE) ]; then
-            echo "FIRST_TIME_SETUP_COMPLETED" >> $WORDPRESS_LOCK_FILE
-        fi
+    if [ $(grep "W3TC_PLUGIN_CONFIG_UPDATED" $WORDPRESS_LOCK_FILE) ] &&  [ ! $(grep "FIRST_TIME_SETUP_COMPLETED" $WORDPRESS_LOCK_FILE) ]; then
+        echo "FIRST_TIME_SETUP_COMPLETED" >> $WORDPRESS_LOCK_FILE
     fi
     
     #Start server with static webpage until wordpress is installed
@@ -153,32 +151,7 @@ setup_wordpress() {
         && wp w3-total-cache import $WORDPRESS_SOURCE/w3tc-config.json --path=$WORDPRESS_HOME --allow-root; then
             echo "W3TC_PLUGIN_CONFIG_UPDATED" >> $WORDPRESS_LOCK_FILE
         fi
-    fi
-    
-    if [ $BLOB_STORAGE_ENABLED ] && [ $(grep "WP_INSTALLATION_COMPLETED" $WORDPRESS_LOCK_FILE) ] && [ ! $(grep "BLOB_STORAGE_PLUGIN_INSTALLED" $WORDPRESS_LOCK_FILE) ]; then
-        if wp plugin is-installed windows-azure-storage --path=$WORDPRESS_HOME --allow-root; then
-            echo "BLOB_STORAGE_PLUGIN_INSTALLED" >> $WORDPRESS_LOCK_FILE
-        elif wp plugin install windows-azure-storage --force --activate --path=$WORDPRESS_HOME --allow-root; then
-            echo "BLOB_STORAGE_PLUGIN_INSTALLED" >> $WORDPRESS_LOCK_FILE
-        fi
-    fi
-    
-    if [ $BLOB_STORAGE_ENABLED ] && [ $(grep "BLOB_STORAGE_PLUGIN_INSTALLED" $WORDPRESS_LOCK_FILE) ] && [ ! $(grep "BLOB_STORAGE_CONFIG_UPDATED" $WORDPRESS_LOCK_FILE) ]; then  
-        if wp option update azure_storage_account_name $STORAGE_ACCOUNT_NAME  --path=$WORDPRESS_HOME --allow-root \
-        && wp option update azure_storage_account_primary_access_key $STORAGE_ACCOUNT_KEY  --path=$WORDPRESS_HOME --allow-root \
-        && wp option update default_azure_storage_account_container_name $BLOB_CONTAINER_NAME  --path=$WORDPRESS_HOME --allow-root \
-        && wp option update cname $BLOB_CNAME  --path=$WORDPRESS_HOME --allow-root \
-        && wp option update azure_storage_use_for_default_upload 1  --path=$WORDPRESS_HOME --allow-root; then
-            echo "BLOB_STORAGE_CONFIG_UPDATED" >> $WORDPRESS_LOCK_FILE
-        fi
-    fi    
-    
-    if [ $CDN_ENABLED ] && [ $(grep "W3TC_PLUGIN_CONFIG_UPDATED" $WORDPRESS_LOCK_FILE) ] && [ ! $(grep "CDN_CONFIGURATION_COMPLETE" $WORDPRESS_LOCK_FILE) ]; then  
-        #start atd daemon
-        service atd start
-        service atd status
-        echo '/usr/local/bin/w3tc_cdn_config.sh' | at now +10 minutes
-    fi  	
+    fi	
     
     if [ ! $AZURE_DETECTED ]; then 
 	    echo "INFO: NOT in Azure, chown for "$WORDPRESS_HOME 
