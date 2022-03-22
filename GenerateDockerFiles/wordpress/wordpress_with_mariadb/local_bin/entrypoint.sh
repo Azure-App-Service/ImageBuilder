@@ -140,7 +140,7 @@ setup_wordpress() {
         fi
     fi
 
-    if [ $(grep "WORDPRESS_PULL_COMPLETED" $WORDPRESS_LOCK_FILE) ] && [ ! $(grep "WP_CONFIG_UPDATED" $WORDPRESS_LOCK_FILE) ]; then
+    if [ $(grep "WP_INSTALLATION_COMPLETED" $WORDPRESS_LOCK_FILE) ] && [ ! $(grep "WP_CONFIG_UPDATED" $WORDPRESS_LOCK_FILE) ]; then
         if wp rewrite structure '/%year%/%monthnum%/%day%/%postname%/' --path=$WORDPRESS_HOME --allow-root \
         && wp option set rss_user_excerpt 1 --path=$WORDPRESS_HOME --allow-root \
         && wp option set page_comments 1 --path=$WORDPRESS_HOME --allow-root \
