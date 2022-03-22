@@ -58,42 +58,25 @@ setup_wordpress() {
         echo "INFO: Found an existing WordPress status file ..."
     fi
 
-    if [ ! $(grep "GIT_PULL_COMPLETED" $WORDPRESS_LOCK_FILE) ]; then
-        local IS_GIT_PULL_SUCCESS="FALSE"
+    if [ $(grep "GIT_PULL_COMPLETED" $WORDPRESS_LOCK_FILE) ] &&  [ ! $(grep "WORDPRESS_PULL_COMPLETED" $WORDPRESS_LOCK_FILE) ]; then
+        echo "WORDPRESS_PULL_COMPLETED" >> $WORDPRESS_LOCK_FILE
+    fi
+
+    if [ ! $(grep "WORDPRESS_PULL_COMPLETED" $WORDPRESS_LOCK_FILE) ]; then
         while [ -d $WORDPRESS_HOME ]
         do
             mkdir -p /home/bak
             mv $WORDPRESS_HOME /home/bak/wordpress_bak$(date +%s)            
         done
         
-        GIT_REPO=${GIT_REPO:-https://github.com/azureappserviceoss/wordpress-azure}
-	    GIT_BRANCH=${GIT_BRANCH:-linux-appservice}
-	    echo "INFO: ++++++++++++++++++++++++++++++++++++++++++++++++++:"
-	    echo "REPO: "$GIT_REPO
-	    echo "BRANCH: "$GIT_BRANCH
-	    echo "INFO: ++++++++++++++++++++++++++++++++++++++++++++++++++:"
-
-        if git clone $GIT_REPO $WORDPRESS_HOME && cd $WORDPRESS_HOME; then
-            if [ "$GIT_BRANCH" != "master" ]; then
-                if git fetch origin \
-                && git branch --track $GIT_BRANCH origin/$GIT_BRANCH \
-                && git checkout $GIT_BRANCH; then
-                    IS_GIT_PULL_SUCCESS="TRUE"
-                fi
-            else
-                IS_GIT_PULL_SUCCESS="TRUE"
-            fi
-        fi
-
-        #remove .git
-        rm  -rf $WORDPRESS_HOME/.git
-
-        if [ "$IS_GIT_PULL_SUCCESS" == "TRUE" ]; then
-            echo "GIT_PULL_COMPLETED" >> $WORDPRESS_LOCK_FILE
+        mkdir -p $WORDPRESS_HOME
+        echo "INFO: Pulling WordPress code"
+        if cp -r $WORDPRESS_SOURCE/wordpress-azure/* $WORDPRESS_HOME; then
+            echo "WORDPRESS_PULL_COMPLETED" >> $WORDPRESS_LOCK_FILE
         fi
     fi
 
-    if [ $(grep "GIT_PULL_COMPLETED" $WORDPRESS_LOCK_FILE) ] &&  [ ! $(grep "WP_INSTALLATION_COMPLETED" $WORDPRESS_LOCK_FILE) ]; then
+    if [ $(grep "WORDPRESS_PULL_COMPLETED" $WORDPRESS_LOCK_FILE) ] &&  [ ! $(grep "WP_INSTALLATION_COMPLETED" $WORDPRESS_LOCK_FILE) ]; then
         if wp core install --url=$WEBSITE_HOSTNAME --title="${WORDPRESS_TITLE}" --admin_user=$WORDPRESS_ADMIN_USER --admin_password=$WORDPRESS_ADMIN_PASSWORD --admin_email=$WORDPRESS_ADMIN_EMAIL --skip-email --path=$WORDPRESS_HOME --allow-root; then
             echo "WP_INSTALLATION_COMPLETED" >> $WORDPRESS_LOCK_FILE
         fi
