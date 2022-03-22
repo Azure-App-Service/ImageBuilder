@@ -35,6 +35,9 @@ RUN mkdir -p /home/LogFiles /opt/startup \
       bind-tools \
      && chmod -R 777 /opt/startup
 
+COPY tcpping /usr/bin/tcpping
+RUN chmod 755 /usr/bin/tcpping
+
 # Setup default site
 RUN rm -f /etc/ssh/sshd_config
 COPY init_container.sh /opt/startup

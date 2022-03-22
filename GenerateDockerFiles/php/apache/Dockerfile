@@ -9,8 +9,12 @@ RUN apt-get update \
       net-tools \
       dnsutils \
       tcpdump \
+      tcptraceroute \
       iproute2 \
       nano
+
+COPY tcpping /usr/bin/tcpping
+RUN chmod 755 /usr/bin/tcpping
 
 COPY init_container.sh /bin/
 COPY hostingstart.html /home/site/wwwroot/hostingstart.html

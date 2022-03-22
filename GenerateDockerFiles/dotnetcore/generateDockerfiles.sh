@@ -42,6 +42,9 @@ function generateDockerFiles()
         mkdir -p "$CURR_VERSION_DIRECTORY"
         cp -R ${DIR}/${STACK_VERSION_TEMPLATE_DIR}/* "$CURR_VERSION_DIRECTORY"
 
+        # Copy common files 
+	cp -R ${DIR}/../common/* "$CURR_VERSION_DIRECTORY"
+
         echo "Copying ${DIR}/SampleApps/${STACK_VERSION}/bin.zip to ${CURR_VERSION_DIRECTORY}..."
         cp "${DIR}/SampleApps/${STACK_VERSION}/bin.zip" "${CURR_VERSION_DIRECTORY}"
 

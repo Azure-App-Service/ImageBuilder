@@ -26,6 +26,9 @@ RUN apt-get update \
     && pip install flask \
     && pip install scandir 
 
+COPY tcpping /usr/bin/tcpping
+RUN chmod 755 /usr/bin/tcpping
+
 WORKDIR ${HOME_SITE}
 
 EXPOSE 8000

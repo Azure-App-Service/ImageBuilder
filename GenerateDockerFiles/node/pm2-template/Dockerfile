@@ -20,6 +20,10 @@ RUN mkdir -p /home/LogFiles /opt/startup \
       tcpdump \
       cron \
       iproute2
+
+COPY tcpping /usr/bin/tcpping
+RUN chmod 755 /usr/bin/tcpping
+
 # setup default site
 RUN rm -f /etc/ssh/sshd_config
 COPY startup /opt/startup
