@@ -107,7 +107,6 @@ RUN set -ex \
 # at and jq
 # ------
     && apk add --no-cache at \
-    && apk add --no-cache jq \
 #---------------
 # openrc service
 #---------------

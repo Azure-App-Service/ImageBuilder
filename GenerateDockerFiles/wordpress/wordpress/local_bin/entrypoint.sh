@@ -79,6 +79,7 @@ setup_wordpress() {
     
     #Start server with static webpage until wordpress is installed
     if [ ! $(grep "FIRST_TIME_SETUP_COMPLETED" $WORDPRESS_LOCK_FILE) ]; then
+        echo "INFO: Starting temporary server while WordPress is being installed"
         dummy_server_start
     fi
     
@@ -185,11 +186,13 @@ setup_wordpress() {
     fi
 }
 
+setup_nginx() {
+    test ! -d "$NGINX_LOG_DIR" && echo "INFO: Log folder for nginx/php not found. creating..." && mkdir -p "$NGINX_LOG_DIR"
+}
+
 echo "Setup openrc ..." && openrc && touch /run/openrc/softlevel
 
-test ! -d "$SUPERVISOR_LOG_DIR" && echo "INFO: $SUPERVISOR_LOG_DIR not found. creating ..." && mkdir -p "$SUPERVISOR_LOG_DIR"
-test ! -d "$NGINX_LOG_DIR" && echo "INFO: Log folder for nginx/php not found. creating..." && mkdir -p "$NGINX_LOG_DIR"
-test ! -e /home/50x.html && echo "INFO: 50x file not found. creating..." && cp /usr/share/nginx/html/50x.html /home/50x.html
+setup_nginx
 
 if ! [[ $SKIP_WP_INSTALLATION ]] || ! [[ "$SKIP_WP_INSTALLATION" == "true" 
     || "$SKIP_WP_INSTALLATION" == "TRUE" || "$SKIP_WP_INSTALLATION" == "True" ]]; then
@@ -257,6 +260,9 @@ if [ ! $AZURE_DETECTED ]; then
     crond	
 fi 
 
+
+test ! -d "$SUPERVISOR_LOG_DIR" && echo "INFO: $SUPERVISOR_LOG_DIR not found. creating ..." && mkdir -p "$SUPERVISOR_LOG_DIR"
+test ! -e /home/50x.html && echo "INFO: 50x file not found. creating..." && cp /usr/share/nginx/html/50x.html /home/50x.html
 
 #Updating php configuration values
 if [[ -e $PHP_CUSTOM_CONF_FILE ]]; then

@@ -119,59 +119,28 @@ setup_phpmyadmin(){
 }    
 
 setup_wordpress() {
-    if [ ! -d $WORDPRESS_LOCK_HOME ]; then
-        mkdir -p $WORDPRESS_LOCK_HOME
-    fi
-
-    if [ ! -e $WORDPRESS_LOCK_FILE ]; then
-        echo "INFO: creating a new WordPress status file ..."
-        touch $WORDPRESS_LOCK_FILE;
-    else 
-        echo "INFO: Found an existing WordPress status file ..."
-    fi
-
-    if [ ! $(grep "GIT_PULL_COMPLETED" $WORDPRESS_LOCK_FILE) ]; then
-        local IS_GIT_PULL_SUCCESS="FALSE"
+        
+    if [ ! $(grep "WORDPRESS_PULL_COMPLETED" $WORDPRESS_LOCK_FILE) ]; then
         while [ -d $WORDPRESS_HOME ]
         do
             mkdir -p /home/bak
             mv $WORDPRESS_HOME /home/bak/wordpress_bak$(date +%s)            
         done
         
-        GIT_REPO=${GIT_REPO:-https://github.com/azureappserviceoss/wordpress-azure}
-	    GIT_BRANCH=${GIT_BRANCH:-linux-appservice}
-	    echo "INFO: ++++++++++++++++++++++++++++++++++++++++++++++++++:"
-	    echo "REPO: "$GIT_REPO
-	    echo "BRANCH: "$GIT_BRANCH
-	    echo "INFO: ++++++++++++++++++++++++++++++++++++++++++++++++++:"
-
-        if git clone $GIT_REPO $WORDPRESS_HOME && cd $WORDPRESS_HOME; then
-            if [ "$GIT_BRANCH" != "master" ]; then
-                if git fetch origin \
-                && git branch --track $GIT_BRANCH origin/$GIT_BRANCH \
-                && git checkout $GIT_BRANCH; then
-                    IS_GIT_PULL_SUCCESS="TRUE"
-                fi
-            else
-                IS_GIT_PULL_SUCCESS="TRUE"
-            fi
-        fi
-
-        #remove .git
-        rm  -rf $WORDPRESS_HOME/.git
-
-        if [ "$IS_GIT_PULL_SUCCESS" == "TRUE" ]; then
-            echo "GIT_PULL_COMPLETED" >> $WORDPRESS_LOCK_FILE
+        mkdir -p $WORDPRESS_HOME
+        echo "INFO: Pulling WordPress code"
+        if cp -r $WORDPRESS_SOURCE/wordpress-azure/* $WORDPRESS_HOME; then
+            echo "WORDPRESS_PULL_COMPLETED" >> $WORDPRESS_LOCK_FILE
         fi
     fi
 
-    if [ $(grep "GIT_PULL_COMPLETED" $WORDPRESS_LOCK_FILE) ] &&  [ ! $(grep "WP_INSTALLATION_COMPLETED" $WORDPRESS_LOCK_FILE) ]; then
+    if [ $(grep "WORDPRESS_PULL_COMPLETED" $WORDPRESS_LOCK_FILE) ] &&  [ ! $(grep "WP_INSTALLATION_COMPLETED" $WORDPRESS_LOCK_FILE) ]; then
         if wp core install --url=$WEBSITE_HOSTNAME --title="${WORDPRESS_TITLE}" --admin_user=$WORDPRESS_ADMIN_USER --admin_password=$WORDPRESS_ADMIN_PASSWORD --admin_email=$WORDPRESS_ADMIN_EMAIL --skip-email --path=$WORDPRESS_HOME --allow-root; then
             echo "WP_INSTALLATION_COMPLETED" >> $WORDPRESS_LOCK_FILE
         fi
     fi
 
-    if [ $(grep "WP_INSTALLATION_COMPLETED" $WORDPRESS_LOCK_FILE) ] && [ ! $(grep "WP_CONFIG_UPDATED" $WORDPRESS_LOCK_FILE) ]; then
+    if [ $(grep "WORDPRESS_PULL_COMPLETED" $WORDPRESS_LOCK_FILE) ] && [ ! $(grep "WP_CONFIG_UPDATED" $WORDPRESS_LOCK_FILE) ]; then
         if wp rewrite structure '/%year%/%monthnum%/%day%/%postname%/' --path=$WORDPRESS_HOME --allow-root \
         && wp option set rss_user_excerpt 1 --path=$WORDPRESS_HOME --allow-root \
         && wp option set page_comments 1 --path=$WORDPRESS_HOME --allow-root \
@@ -183,9 +152,8 @@ setup_wordpress() {
         fi
     fi
 
-    if [ $(grep "WP_INSTALLATION_COMPLETED" $WORDPRESS_LOCK_FILE) ] && [ ! $(grep "SMUSH_PLUGIN_INSTALLED" $WORDPRESS_LOCK_FILE) ]; then
-        wp plugin is-installed wp-smushit --path=$WORDPRESS_HOME --allow-root
-        if [ $? -eq 0 ]; then
+    if [ $(grep "WP_INSTALLATION_COMPLETED" $WORDPRESS_LOCK_FILE) ] && [ ! $(grep "SMUSH_PLUGIN_INSTALLED" $WORDPRESS_LOCK_FILE) ]; then    
+        if wp plugin is-installed wp-smushit --path=$WORDPRESS_HOME --allow-root; then
             echo "SMUSH_PLUGIN_INSTALLED" >> $WORDPRESS_LOCK_FILE
         elif wp plugin install wp-smushit --force --activate --path=$WORDPRESS_HOME --allow-root; then
             echo "SMUSH_PLUGIN_INSTALLED" >> $WORDPRESS_LOCK_FILE
@@ -204,12 +172,11 @@ setup_wordpress() {
         fi
     fi
 
-    if [ $(grep "WP_INSTALLATION_COMPLETED" $WORDPRESS_LOCK_FILE) ] && [ ! $(grep "W3TC_PLUGIN_INSTALLED" $WORDPRESS_LOCK_FILE) ]; then
-        wp plugin is-installed windows-azure-storage --path=$WORDPRESS_HOME --allow-root
-        if [ $? -eq 0 ]; then
-            echo "BLOB_STORAGE_PLUGIN_INSTALLED" >> $WORDPRESS_LOCK_FILE
-        elif wp plugin install windows-azure-storage --force --activate --path=$WORDPRESS_HOME --allow-root; then
-            echo "BLOB_STORAGE_PLUGIN_INSTALLED" >> $WORDPRESS_LOCK_FILE
+    if [ $(grep "WP_INSTALLATION_COMPLETED" $WORDPRESS_LOCK_FILE) ] && [ ! $(grep "W3TC_PLUGIN_INSTALLED" $WORDPRESS_LOCK_FILE) ]; then 
+        if wp plugin is-installed w3-total-cache --path=$WORDPRESS_HOME --allow-root; then
+            echo "W3TC_PLUGIN_INSTALLED" >> $WORDPRESS_LOCK_FILE
+        elif wp plugin install w3-total-cache --force --activate --path=$WORDPRESS_HOME --allow-root; then
+            echo "W3TC_PLUGIN_INSTALLED" >> $WORDPRESS_LOCK_FILE
         fi
     fi
 
@@ -221,13 +188,6 @@ setup_wordpress() {
         fi
     fi
 
-    if [ $CDN_ENABLED ] && [ $(grep "W3TC_PLUGIN_CONFIG_UPDATED" $WORDPRESS_LOCK_FILE) ] && [ ! $(grep "CDN_CONFIGURATION_COMPLETE" $WORDPRESS_LOCK_FILE) ]; then  
-        #start atd daemon
-        service atd start
-        service atd status
-        echo '/usr/local/bin/w3tc_cdn_config.sh' | at now +10 minutes
-    fi    
-
     # Although in AZURE, we still need below chown cmd.
     chown -R nginx:nginx $WORDPRESS_HOME
 }
@@ -238,7 +198,51 @@ update_localdb_config(){
     export DATABASE_HOST DATABASE_NAME DATABASE_USERNAME DATABASE_PASSWORD   
 }
 
+setup_nginx() {
+    test ! -d "$NGINX_LOG_DIR" && echo "INFO: Log folder for nginx/php not found. creating..." && mkdir -p "$NGINX_LOG_DIR"
+    test -d "/home/etc/nginx" && echo "/home/etc/nginx exists.." && ln -s /home/etc/nginx /etc/nginx && ln -sf /usr/lib/nginx/modules /home/etc/nginx/modules
+    test ! -d "/home/etc/nginx" && mkdir -p /home/etc && cp -R /etc/nginx /home/etc/ && rm -rf /etc/nginx && ln -s /home/etc/nginx /etc/nginx && ln -sf /usr/lib/nginx/modules /home/etc/nginx/modules
+}
+
+setup_wordpress_lock() {
+    if [ ! -d $WORDPRESS_LOCK_HOME ]; then
+        mkdir -p $WORDPRESS_LOCK_HOME
+    fi
+
+    if [ ! -e $WORDPRESS_LOCK_FILE ]; then
+        echo "INFO: creating a new WordPress status file ..."
+        touch $WORDPRESS_LOCK_FILE;
+    else 
+        echo "INFO: Found an existing WordPress status file ..."
+    fi
+    
+    if [ $(grep "W3TC_PLUGIN_CONFIG_UPDATED" $WORDPRESS_LOCK_FILE) ] && [ ! $(grep "FIRST_TIME_SETUP_COMPLETED" $WORDPRESS_LOCK_FILE) ]; then
+        echo "FIRST_TIME_SETUP_COMPLETED" >> $WORDPRESS_LOCK_FILE
+    fi
+}
+
+dummy_server_start() {
+    echo "INFO: Starting temporary server while WordPress is being installed"
+    mkdir -p /home/site/temp-root
+    cp $WORDPRESS_SOURCE/hostingstart.html /home/site/temp-root/hostingstart.html
+    cp /usr/src/nginx/dummy-server.conf /etc/nginx/conf.d/default.conf
+    /usr/sbin/nginx
+}
+
+dummy_server_stop() {
+    #kill any existing nginx processes
+    killall nginx 2> /dev/null 
+    rm -rf /home/site/temp-root
+}
+
 echo "Setup openrc ..." && openrc && touch /run/openrc/softlevel
+
+setup_nginx
+setup_wordpress_lock
+
+if [ ! $(grep "FIRST_TIME_SETUP_COMPLETED" $WORDPRESS_LOCK_FILE) ]; then
+    dummy_server_start
+fi
 
 DATABASE_TYPE=$(echo ${DATABASE_TYPE}|tr '[A-Z]' '[a-z]')
 if [ "${DATABASE_TYPE}" == "local" ]; then
@@ -330,10 +334,7 @@ if [ ! $AZURE_DETECTED ]; then
 fi 
 
 test ! -d "$SUPERVISOR_LOG_DIR" && echo "INFO: $SUPERVISOR_LOG_DIR not found. creating ..." && mkdir -p "$SUPERVISOR_LOG_DIR"
-test ! -d "$NGINX_LOG_DIR" && echo "INFO: Log folder for nginx/php not found. creating..." && mkdir -p "$NGINX_LOG_DIR"
-test ! -e /home/50x.html && echo "INFO: 50x file not found. createing..." && cp /usr/share/nginx/html/50x.html /home/50x.html
-test -d "/home/etc/nginx" && echo "/home/etc/nginx exists.." && ln -s /home/etc/nginx /etc/nginx && ln -sf /usr/lib/nginx/modules /home/etc/nginx/modules
-test ! -d "/home/etc/nginx" && mkdir -p /home/etc && cp -R /etc/nginx /home/etc/ && rm -rf /etc/nginx && ln -s /home/etc/nginx /etc/nginx && ln -sf /usr/lib/nginx/modules /home/etc/nginx/modules
+test ! -e /home/50x.html && echo "INFO: 50x file not found. creating..." && cp /usr/share/nginx/html/50x.html /home/50x.html
 
 #Just In Case, use external DB before, change to Local DB this time.
 if [ "$DATABASE_TYPE" == "local" ]; then
@@ -368,6 +369,12 @@ sed -i "s/SSH_PORT/$SSH_PORT/g" /etc/ssh/sshd_config
 echo "Starting SSH ..."
 echo "Starting php-fpm ..."
 echo "Starting Nginx ..."
+
+#stop dummy server
+dummy_server_stop
+
+#ensure correct default.conf before starting/reloading WordPress server
+cp /usr/src/nginx/wordpress-server.conf /etc/nginx/conf.d/default.conf
 
 cd /usr/bin/
 supervisord -c /etc/supervisord.conf

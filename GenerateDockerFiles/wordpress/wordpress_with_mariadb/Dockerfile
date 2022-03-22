@@ -113,10 +113,9 @@ RUN set -ex \
     && apk add --no-cache openssh-server \
     && echo "$SSH_PASSWD" | chpasswd \
 # ------
-# at and jq
+# at
 # ------
     && apk add --no-cache at \
-    && apk add --no-cache jq \
 #---------------
 # openrc service
 #---------------
@@ -367,8 +366,10 @@ COPY php_fpm_conf/. /usr/local/etc/php-fpm.d/
 COPY php-fpm.conf /usr/local/etc/
 # nginx
 COPY nginx_conf/nginx.conf /etc/nginx/nginx.conf
-COPY nginx_conf/default.conf /etc/nginx/conf.d/default.conf
+COPY nginx_conf/wordpress-server.conf /etc/nginx/conf.d/default.conf
 COPY nginx_conf/spec-settings.conf /etc/nginx/conf.d/spec-settings.conf
+COPY nginx_conf/wordpress-server.conf /usr/src/nginx/wordpress-server.conf
+COPY nginx_conf/dummy-server.conf /usr/src/nginx/dummy-server.conf
 # mariadb
 COPY mariadb.cnf /etc/mysql/my.cnf
 # COPY my.cnf /etc/my.cnf
