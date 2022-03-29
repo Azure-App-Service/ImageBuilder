@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env -S -i HOME=${HOME} PATH=${PATH} bash
 
 RESULT1=`pgrep dotnet-monitor`
 
