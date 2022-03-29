@@ -19,6 +19,9 @@ RUN apt-get update \
     && apt-get upgrade -y openssl \
     && rm -rf /var/lib/apt/lists/*
 
+COPY tcpping /usr/bin/tcpping
+RUN chmod 755 /usr/bin/tcpping
+
 RUN curl -L https://aka.ms/downloadazcopy-v10-linux | tar -C /usr/local/bin -xzf - --strip-components=1
 
 RUN mkdir -p /defaulthome/hostingstart \

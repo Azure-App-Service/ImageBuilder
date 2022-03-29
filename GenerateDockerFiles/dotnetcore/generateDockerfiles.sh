@@ -42,10 +42,13 @@ function generateDockerFiles()
         mkdir -p "$CURR_VERSION_DIRECTORY"
         cp -R ${DIR}/${STACK_VERSION_TEMPLATE_DIR}/* "$CURR_VERSION_DIRECTORY"
 
+        # Copy common files 
+	cp -R ${DIR}/../common/* "$CURR_VERSION_DIRECTORY"
+
         echo "Copying ${DIR}/SampleApps/${STACK_VERSION}/bin.zip to ${CURR_VERSION_DIRECTORY}..."
         cp "${DIR}/SampleApps/${STACK_VERSION}/bin.zip" "${CURR_VERSION_DIRECTORY}"
 
-        if [ "$BASE_IMAGE" == "5.0" ] || [ "$BASE_IMAGE" == "6.0" ]; then
+        if [ "$BASE_IMAGE" == "5.0" ] || [ "$BASE_IMAGE" == "6.0" ] || [ "$BASE_IMAGE" == "7.0" ]; then
             BRANDING=".NET"
         fi
 

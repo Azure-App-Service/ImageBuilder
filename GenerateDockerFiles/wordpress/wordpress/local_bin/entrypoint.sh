@@ -46,6 +46,19 @@ update_php_config() {
 	fi
 }
 
+temp_server_start() {
+    mkdir -p /home/site/temp-root
+    cp -r /usr/src/temp-server/* /home/site/temp-root/
+    cp /usr/src/nginx/temp-server.conf /etc/nginx/conf.d/default.conf
+    /usr/sbin/nginx
+}
+
+temp_server_stop() {
+    #kill any existing nginx processes
+    killall nginx 2> /dev/null 
+    rm -rf /home/site/temp-root
+}
+
 setup_wordpress() {
     if [ ! -d $WORDPRESS_LOCK_HOME ]; then
         mkdir -p $WORDPRESS_LOCK_HOME
@@ -57,7 +70,15 @@ setup_wordpress() {
     else 
         echo "INFO: Found an existing WordPress status file ..."
     fi
-
+        
+    IS_TEMP_SERVER_STARTED="False"
+    #Start server with static webpage until wordpress is installed
+    if [ ! $(grep "FIRST_TIME_SETUP_COMPLETED" $WORDPRESS_LOCK_FILE) ]; then
+        echo "INFO: Starting temporary server while WordPress is being installed"
+        IS_TEMP_SERVER_STARTED="True"
+        temp_server_start
+    fi
+    
     if [ ! $(grep "GIT_PULL_COMPLETED" $WORDPRESS_LOCK_FILE) ]; then
         local IS_GIT_PULL_SUCCESS="FALSE"
         while [ -d $WORDPRESS_HOME ]
@@ -141,13 +162,25 @@ setup_wordpress() {
         && wp w3-total-cache import $WORDPRESS_SOURCE/w3tc-config.json --path=$WORDPRESS_HOME --allow-root; then
             echo "W3TC_PLUGIN_CONFIG_UPDATED" >> $WORDPRESS_LOCK_FILE
         fi
+    fi	
+
+    if [ $(grep "W3TC_PLUGIN_CONFIG_UPDATED" $WORDPRESS_LOCK_FILE) ] && [ $(grep "SMUSH_PLUGIN_CONFIG_UPDATED" $WORDPRESS_LOCK_FILE) ] &&  [ ! $(grep "FIRST_TIME_SETUP_COMPLETED" $WORDPRESS_LOCK_FILE) ]; then
+        echo "FIRST_TIME_SETUP_COMPLETED" >> $WORDPRESS_LOCK_FILE
     fi
-    
+
     if [ ! $AZURE_DETECTED ]; then 
 	    echo "INFO: NOT in Azure, chown for "$WORDPRESS_HOME 
 	    chown -R nginx:nginx $WORDPRESS_HOME
     fi
 }
+
+setup_nginx() {
+    test ! -d "$NGINX_LOG_DIR" && echo "INFO: Log folder for nginx/php not found. creating..." && mkdir -p "$NGINX_LOG_DIR"
+}
+
+echo "Setup openrc ..." && openrc && touch /run/openrc/softlevel
+
+setup_nginx
 
 if ! [[ $SKIP_WP_INSTALLATION ]] || ! [[ "$SKIP_WP_INSTALLATION" == "true" 
     || "$SKIP_WP_INSTALLATION" == "TRUE" || "$SKIP_WP_INSTALLATION" == "True" ]]; then
@@ -156,7 +189,7 @@ if ! [[ $SKIP_WP_INSTALLATION ]] || ! [[ "$SKIP_WP_INSTALLATION" == "true"
         echo "INFO: $WORDPRESS_HOME/wp-config.php or wp-includes/version.php not found."
         rm -f $WORDPRESS_LOCK_FILE
     fi
-
+    
     setup_wordpress
 else 
     echo "INFO: Skipping WP installation..."
@@ -185,13 +218,12 @@ fi
 #     echo "INFO: Permalink setting is exist!"
 # fi
 
-echo "Setup openrc ..." && openrc && touch /run/openrc/softlevel
-
 # setup server root
 if [ ! $AZURE_DETECTED ]; then 
     echo "INFO: NOT in Azure, chown for "$WORDPRESS_HOME 
     chown -R nginx:nginx $WORDPRESS_HOME
 fi
+
 
 # calculate Redis max memory 
 RAM_KB=$(grep MemTotal /proc/meminfo | awk '{print $2}')
@@ -216,10 +248,9 @@ if [ ! $AZURE_DETECTED ]; then
     crond	
 fi 
 
-test ! -d "$SUPERVISOR_LOG_DIR" && echo "INFO: $SUPERVISOR_LOG_DIR not found. creating ..." && mkdir -p "$SUPERVISOR_LOG_DIR"
-test ! -d "$NGINX_LOG_DIR" && echo "INFO: Log folder for nginx/php not found. creating..." && mkdir -p "$NGINX_LOG_DIR"
-test ! -e /home/50x.html && echo "INFO: 50x file not found. creating..." && cp /usr/share/nginx/html/50x.html /home/50x.html
 
+test ! -d "$SUPERVISOR_LOG_DIR" && echo "INFO: $SUPERVISOR_LOG_DIR not found. creating ..." && mkdir -p "$SUPERVISOR_LOG_DIR"
+test ! -e /home/50x.html && echo "INFO: 50x file not found. creating..." && cp /usr/share/nginx/html/50x.html /home/50x.html
 
 #Updating php configuration values
 if [[ -e $PHP_CUSTOM_CONF_FILE ]]; then
@@ -244,6 +275,13 @@ sed -i "s/SSH_PORT/$SSH_PORT/g" /etc/ssh/sshd_config
 echo "Starting SSH ..."
 echo "Starting php-fpm ..."
 echo "Starting Nginx ..."
+
+if [ "$IS_TEMP_SERVER_STARTED" == "True" ]; then
+    #stop temporary server
+    temp_server_stop
+fi
+#ensure correct default.conf before starting WordPress server
+cp /usr/src/nginx/wordpress-server.conf /etc/nginx/conf.d/default.conf
 
 cd /usr/bin/
 supervisord -c /etc/supervisord.conf

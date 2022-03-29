@@ -362,8 +362,10 @@ COPY php_fpm_conf/. /usr/local/etc/php-fpm.d/
 COPY php-fpm.conf /usr/local/etc/
 # nginx
 COPY nginx_conf/nginx.conf /etc/nginx/nginx.conf
-COPY nginx_conf/default.conf /etc/nginx/conf.d/default.conf
+COPY nginx_conf/wordpress-server.conf /etc/nginx/conf.d/default.conf
 COPY nginx_conf/spec-settings.conf /etc/nginx/conf.d/spec-settings.conf
+COPY nginx_conf/wordpress-server.conf /usr/src/nginx/wordpress-server.conf
+COPY nginx_conf/temp-server.conf /usr/src/nginx/temp-server.conf
 # mariadb
 COPY mariadb.cnf /etc/mysql/my.cnf
 # COPY my.cnf /etc/my.cnf
@@ -378,6 +380,8 @@ RUN chmod -R 444 /etc/logrotate.d
 COPY supervisord.conf /etc/
 # wordpress
 COPY wordpress_src/. $WORDPRESS_SOURCE/
+#temporary server
+COPY temp_server_src/. /usr/src/temp-server/
 # php
 COPY uploads.ini /usr/local/etc/php/conf.d/
 

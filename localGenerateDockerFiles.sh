@@ -10,13 +10,15 @@
 # 
 
 # values from ImageBuilder/GenerateDockerFiles/dockerFilesGenerateTask.yml
-while getopts ":b:t:s:" opt; do
+while getopts ":b:t:s:k:" opt; do
   case $opt in
     b) oryxBaseImageName="$OPTARG"
     ;;
     t) oryxTagName="$OPTARG"
     ;;
     s) stackName="$OPTARG"
+    ;;
+    k) kuduliteBranch="$OPTARG"
     ;;
     \?) echo "Invalid option -$OPTARG" >&2
         exit 1
@@ -26,15 +28,20 @@ done
 
 artifactStagingDirectory="output/DockerFiles"
 baseImageName="${oryxBaseImageName:="mcr.microsoft.com/oryx"}" 
-baseImageVersion="${oryxTagName:="20220307.2"}" # change me as needed
+baseImageVersion="${oryxTagName:="20220308.4"}" # change me as needed
 appSvcGitUrl="https://github.com/Azure-App-Service"
+kuduliteBranch="${kuduliteBranch:="dev"}"
 configDir="Config"
 
 echo "Base Image          : $baseImageName"
 echo "Base Image Version  : $baseImageVersion"
 echo "Stack               : $stackName"
-echo ""
+if [[ $stackName == "kudulite" ]];
+then
+echo "Kudulite dev branch : $kuduliteBranch"
+fi
 
+echo ""
 rm -rf $artifactStagingDirectory
 
 function generateDockerFilesFor_Node()
@@ -83,7 +90,8 @@ function generateDockerFilesFor_Wordpress()
 function generateDockerFilesFor_Kudulite()
 {
     chmod u+x GenerateDockerFiles/KuduLite/generateDockerfiles.sh 
-    GenerateDockerFiles/KuduLite/generateDockerfiles.sh $artifactStagingDirectory $baseImageName $baseImageVersion $appSvcGitUrl $configDir
+    local kuduliteRepoUrl="https://msazure.visualstudio.com/DefaultCollection/Antares/_git/AAPT-Antares-KuduLite"
+    GenerateDockerFiles/KuduLite/generateDockerfiles.sh $artifactStagingDirectory $baseImageName $baseImageVersion $kuduliteRepoUrl $configDir $kuduliteBranch
 }
 
 if [[ -z $stackName ]]; then

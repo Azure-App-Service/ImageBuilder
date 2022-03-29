@@ -33,6 +33,9 @@ function generateDockerFiles()
         mkdir -p "$CURR_VERSION_DIRECTORY"
         cp -R ${DIR}/${STACK_VERSION_TEMPLATE_DIR}/* "$CURR_VERSION_DIRECTORY"
 
+        # Copy common files
+        cp -R ${DIR}/../common/* "$CURR_VERSION_DIRECTORY"
+
         echo "Done."
 
     done < "$stackVersionsMapFilePath"

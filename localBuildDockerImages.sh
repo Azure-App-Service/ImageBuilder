@@ -39,8 +39,7 @@ function buildAndTagImages()
     githubRepo="${githubRepo:="GitRepo"}" 
 
     local buildNumber=$3  
-    buildNumber="${buildNumber:=BuildNumber}" 
-
+    buildNumber="${buildNumber:="$BuildNumber"}" 
     BuildAndTagImages/build.sh $DockerFileDir appsvctest "Config" $BuildNumber $stackName "PullRequest" $githubRepo $buildNumber
 }
 

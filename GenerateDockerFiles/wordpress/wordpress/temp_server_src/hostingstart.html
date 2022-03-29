@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta http-equiv="refresh" content="30"/>
+    <title>WordPress on Azure - Welcome</title>
+    <link rel="shortcut icon" href="https://appservice.azureedge.net/images/app-service/v4/favicon.ico" type="image/x-icon"/>
+    <link href="https://appservice.azureedge.net/css/app-service/v4/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous"/>
+    <style>
+    html, body{height: 100%; background-color: #ffffff; color: #000000; font-size: 13px;}*{border-radius: 0 ;}
+    .spinner {
+        border: 9px solid #f2f2e2; /* Light grey */
+        border-top: 9px solid #3498db; /* Blue */
+        border-right: 9px solid #3498db;
+        border-radius: 50%;
+        width: 58px;
+        height: 58px;
+        animation: spin 1.5s linear infinite;
+    }
+    @keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+    @-webkit-keyframes spin {
+        0% {
+            -webkit-transform: rotate(0deg);
+        }
+
+        100% {
+            -webkit-transform: rotate(360deg);
+        }
+    }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+    <div class="navbar-brand ">
+        <div class="container pl-4 ml-5">
+        <img src="https://appservice.azureedge.net/images/app-service/v4/azurelogo.svg" width="270" height="108" alt=""/>
+        </div>
+    </div>
+    </nav>
+    <div class="container-fluid mr-2 mt-0 pt-5">
+    <div class="row">
+        <div class="col-xs-12 col-sm-12 d-block d-lg-none d-xl-none d-md-block d-sm-block d-xs-block">
+            <div class="text-center"><img src="https://appservice.azureedge.net/images/app-service/v4/web.svg"/>
+            </div>
+        </div>
+        <div class="pl-5 ml-5 col-xl-5 col-lg-5 col-md-10 col-sm-11 col-xs-11">
+            <div class="container-fluid">
+                <div class="row">
+                    <h2 id="upRunning">Please wait... WordPress is installing.</h2>
+                </div>
+                <div class="row mt-0 pt-4">
+                    <div id="appIsLive" style="font-size:16px;width: 516px;">Installation may take upto 5-minutes. Check again soon!</div>
+                </div>
+            </div>
+            <div class="row mt-5 pl-2 ml-4">
+                <div class="spinner"></div>
+            </div>
+        </div>
+        <div class="col-xl-5 col-lg-5 col-md-12 d-none d-lg-block">
+            <div class="text-left">
+                <img src="https://appservice.azureedge.net/images/app-service/v4/web.svg"/>
+            </div>
+        </div>
+        <div class="col-xl-1 col-lg-1 col-md-1"></div>
+    </div>
+    <div class="row mt-0">
+        <div class="container-fluid">
+        <div class="row mt-0">
+            <div class="pl-5 ml-5 col-md-3 mt-4">
+            <p>
+                <span id="newToAzure">New to WordPress on Azure?</span>
+                <span id="useDCenter">Follow our documentation to get more information.</span>
+                <br/><a id="depCenterLink" href="https://azure.github.io/AppService/2022/02/23/WordPress-on-App-Service-Public-Preview.html"><button class="btn btn-primary mt-4" type="submit" id="deplCenter">Documentation</button>
+                </a>
+                </p>
+            </div>
+        </div>
+        </div>
+    </div>
+    </div>
+</body>
+</html>

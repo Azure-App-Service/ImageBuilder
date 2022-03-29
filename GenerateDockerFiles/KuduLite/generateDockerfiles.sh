@@ -19,9 +19,10 @@ declare -r APPSVC_KUDULITE_REPO="$4"
 declare -r CONFIG_DIR="$5"                                         # ${Current_Repo}/Config
 declare -r METADATA_FILE="$SYSTEM_ARTIFACTS_DIR/metadata"
 declare -r APP_SVC_REPO_DIR="$SYSTEM_ARTIFACTS_DIR/$STACK_NAME/GitRepo"
-declare -r APP_SVC_REPO_BRANCH="dev"
+declare -r KUDULITE_BRANCH=$6
+declare -r APP_SVC_REPO_BRANCH="${KUDULITE_BRANCH:="dev"}"
 declare -r DYN_INST_REPO_DIR="$SYSTEM_ARTIFACTS_DIR/$STACK_NAME/GitRepo-DynInst"
-declare -r DYN_INST_REPO_BRANCH="dev"
+declare -r DYN_INST_REPO_BRANCH="${KUDULITE_BRANCH:="dev"}"
 
 function generateKuduLiteDockerFiles()
 {
@@ -94,4 +95,5 @@ function pullAppSvcRepo()
 
 pullAppSvcRepo
 generateKuduLiteDockerFiles
+echo
 generateKuduLiteBusterInstallsDockerFiles

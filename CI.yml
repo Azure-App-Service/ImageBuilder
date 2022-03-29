@@ -11,8 +11,8 @@ schedules:
   branches:
     include:
     - master
-    - releases/*
     exclude:
+    - releases/*
     - releases/ancient/*
 - cron: "0 12 * * 0"
   displayName: Weekly Sunday build

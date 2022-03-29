@@ -24,8 +24,10 @@ RUN apt-get update \
     && pip install gunicorn \ 
     && pip install virtualenv \
     && pip install flask \
-    && pip install scandir \
-    && pip install pathlib2
+    && pip install scandir 
+
+COPY tcpping /usr/bin/tcpping
+RUN chmod 755 /usr/bin/tcpping
 
 WORKDIR ${HOME_SITE}
 
