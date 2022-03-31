@@ -166,7 +166,7 @@ jobs:
 - job: Job_DockerBuildWordPressImages
   displayName: Build WordPress Dev Images
   dependsOn: Job_GenerateDockerFiles
-  condition: and(succeeded(), eq(startsWith(variables['Build.SourceBranch'], 'refs/heads/releases/'), 'false'))
+  condition: and(succeeded(), not(startsWith(variables['Build.SourceBranch'], 'refs/heads/releases/')))
   pool:
     vmImage: ubuntu-18.04
   timeoutInMinutes: 100
