@@ -10,13 +10,15 @@
 # 
 
 # values from ImageBuilder/GenerateDockerFiles/dockerFilesGenerateTask.yml
-while getopts ":b:t:s:k:" opt; do
+while getopts ":b:t:s:v:k:" opt; do
   case $opt in
     b) oryxBaseImageName="$OPTARG"
     ;;
     t) oryxTagName="$OPTARG"
     ;;
     s) stackName="$OPTARG"
+    ;;
+    v) stackVersion="$OPTARG"
     ;;
     k) kuduliteBranch="$OPTARG"
     ;;
@@ -47,26 +49,26 @@ rm -rf $artifactStagingDirectory
 function generateDockerFilesFor_Node()
 {
     chmod u+x GenerateDockerFiles/node/generateDockerfiles.sh
-    GenerateDockerFiles/node/generateDockerfiles.sh $artifactStagingDirectory $baseImageName $baseImageVersion $appSvcGitUrl $configDir
+    GenerateDockerFiles/node/generateDockerfiles.sh $artifactStagingDirectory $baseImageName $baseImageVersion $appSvcGitUrl $configDir $stackVersion
 }
 
 function generateDockerFilesFor_NetCore()
 {
     chmod u+x GenerateDockerFiles/dotnetcore/generateDockerfiles.sh 
-    GenerateDockerFiles/dotnetcore/generateDockerfiles.sh $artifactStagingDirectory $baseImageName $baseImageVersion $appSvcGitUrl $configDir
+    GenerateDockerFiles/dotnetcore/generateDockerfiles.sh $artifactStagingDirectory $baseImageName $baseImageVersion $appSvcGitUrl $configDir $stackVersion
 }
 
 function generateDockerFilesFor_Python()
 {
     chmod u+x GenerateDockerFiles/python/generateDockerfiles.sh
-    GenerateDockerFiles/python/generateDockerfiles.sh $artifactStagingDirectory $baseImageName $baseImageVersion $appSvcGitUrl $configDir
+    GenerateDockerFiles/python/generateDockerfiles.sh $artifactStagingDirectory $baseImageName $baseImageVersion $appSvcGitUrl $configDir $stackVersion
 }
 
 
 function generateDockerFilesFor_PHP()
 {
     chmod u+x GenerateDockerFiles/php/generateDockerfiles.sh
-    GenerateDockerFiles/php/generateDockerfiles.sh $artifactStagingDirectory $baseImageName $baseImageVersion $appSvcGitUrl $configDir
+    GenerateDockerFiles/php/generateDockerfiles.sh $artifactStagingDirectory $baseImageName $baseImageVersion $appSvcGitUrl $configDir $stackVersion
 }
 
 # function generateDockerFilesFor_PHPXDebug()
@@ -78,7 +80,7 @@ function generateDockerFilesFor_PHP()
 function generateDockerFilesFor_Ruby()
 {
     chmod u+x GenerateDockerFiles/ruby/generateDockerfiles.sh
-    GenerateDockerFiles/ruby/generateDockerfiles.sh $artifactStagingDirectory $appSvcGitUrl $configDir
+    GenerateDockerFiles/ruby/generateDockerfiles.sh $artifactStagingDirectory $appSvcGitUrl $configDir $stackVersion
 }
 
 function generateDockerFilesFor_Wordpress()
