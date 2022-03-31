@@ -1,9 +1,10 @@
 parameters:
   ascName: WAWS_Container_Images
   acrName: wawsimages.azurecr.io
-  stackName: ""
+  stackName: $(STACK)
   imgTag: "$(Build.BuildNumber)"
   filesRootPath: "GitRepo"
+  stackVersion: $(STACK_VERSION)
 
 steps:
 - script: |
@@ -38,7 +39,7 @@ steps:
   displayName: 'Build Images'
   inputs:
     scriptPath: ./BuildAndTagImages/build.sh
-    args: $(Build.ArtifactStagingDirectory)/drop appsvctest $(System.DefaultWorkingDirectory)/Config $(Build.BuildNumber) ${{ parameters.stackName }} $(Build.Reason) ${{ parameters.filesRootPath }} ${{ parameters.imgTag }}
+    args: $(Build.ArtifactStagingDirectory)/drop appsvctest $(System.DefaultWorkingDirectory)/Config $(Build.BuildNumber) ${{ parameters.stackName }} $(Build.Reason) ${{ parameters.filesRootPath }} ${{ parameters.imgTag }} ${{ parameters.stackVersion }}
 
 # Publish Build Artifacts
 # Publish build artifacts to Azure Pipelines/TFS or a file share
