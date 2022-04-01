@@ -182,6 +182,13 @@ setup_wordpress() {
         echo "FIRST_TIME_SETUP_COMPLETED" >> $WORDPRESS_LOCK_FILE
     fi
 
+    if [ $CDN_ENABLED ] && [ $(grep "W3TC_PLUGIN_CONFIG_UPDATED" $WORDPRESS_LOCK_FILE) ] && [ ! $(grep "CDN_CONFIGURATION_COMPLETE" $WORDPRESS_LOCK_FILE) ]; then  
+        #start atd daemon
+        service atd start
+        service atd status
+        echo '/usr/local/bin/w3tc_cdn_config.sh' | at now +10 minutes
+    fi
+
     if [ ! $AZURE_DETECTED ]; then 
 	    echo "INFO: NOT in Azure, chown for "$WORDPRESS_HOME 
 	    chown -R nginx:nginx $WORDPRESS_HOME
