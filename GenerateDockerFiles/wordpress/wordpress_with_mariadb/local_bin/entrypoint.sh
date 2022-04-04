@@ -186,6 +186,17 @@ setup_wordpress() {
         fi
     fi
     
+    if [ $(grep "W3TC_PLUGIN_CONFIG_UPDATED" $WORDPRESS_LOCK_FILE) ] && [ ! $(grep "CDN_CONFIGURATION_COMPLETE" $WORDPRESS_LOCK_FILE) ]; then  
+        if [[ $CDN_ENDPOINT =~ ^.*.azureedge.net$ ]]; then
+            if [[ $CDN_ENABLED ]] || ! [[ "$CDN_ENABLED" == "true" || "$CDN_ENABLED" == "TRUE" || "$CDN_ENABLED" == "True" ]];then
+                #start atd daemon
+                service atd start
+                service atd status
+                echo 'bash /usr/local/bin/w3tc_cdn_config.sh' | at now +10 minutes
+            fi
+        fi
+    fi
+    
     if [ $(grep "W3TC_PLUGIN_CONFIG_UPDATED" $WORDPRESS_LOCK_FILE) ] && [ $(grep "SMUSH_PLUGIN_CONFIG_UPDATED" $WORDPRESS_LOCK_FILE) ] &&  [ ! $(grep "FIRST_TIME_SETUP_COMPLETED" $WORDPRESS_LOCK_FILE) ]; then
         echo "FIRST_TIME_SETUP_COMPLETED" >> $WORDPRESS_LOCK_FILE
     fi
