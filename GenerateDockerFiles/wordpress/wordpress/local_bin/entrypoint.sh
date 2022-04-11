@@ -179,14 +179,31 @@ setup_wordpress() {
     fi	
     
     if [ $(grep "W3TC_PLUGIN_CONFIG_UPDATED" $WORDPRESS_LOCK_FILE) ] && [ ! $(grep "CDN_CONFIGURATION_COMPLETE" $WORDPRESS_LOCK_FILE) ]; then
-        if [[ $CDN_ENABLED ]] && [[ "$CDN_ENABLED" == "true" || "$CDN_ENABLED" == "TRUE" || "$CDN_ENABLED" == "True" ]];then
-            if [[ $CDN_ENDPOINT ]]; then
-                echo "INFO: Scheduling CDN configuration 10 minutes from now.."
-                #start atd daemon
-                service atd start
-                service atd status
-                echo 'bash /usr/local/bin/w3tc_cdn_config.sh' | at now +10 minutes
+        W3TC_CDN_CONFIGURE="None"
+        if [[ $CDN_ENABLED ]] && [[ "$CDN_ENABLED" == "true" || "$CDN_ENABLED" == "TRUE" || "$CDN_ENABLED" == "True" ]] && [[ $CDN_ENDPOINT ]]; then
+            W3TC_CDN_CONFIGURE="CDN"
+            echo "INFO: Configuring CDN at 10 minutes from now.."
+        elif [[ $BLOB_STORAGE_ENABLED ]] && [[ "$BLOB_STORAGE_ENABLED" == "true" || "$BLOB_STORAGE_ENABLED" == "TRUE" || "$BLOB_STORAGE_ENABLED" == "True" ]]; then
+            if wp w3-total-cache import $WORDPRESS_SOURCE/w3tc-blob-config.json --path=$WORDPRESS_HOME --allow-root \
+            && wp w3-total-cache option set cdn.azure.user $STORAGE_ACCOUNT_NAME --path=$WORDPRESS_HOME --allow-root \
+            && wp w3-total-cache option set cdn.azure.container $BLOB_CONTAINER_NAME --path=$WORDPRESS_HOME --allow-root \
+            && wp w3-total-cache option set cdn.azure.key $STORAGE_ACCOUNT_KEY --path=$WORDPRESS_HOME --allow-root \
+            && wp w3-total-cache option set cdn.enabled true --type=boolean --path=$WORDPRESS_HOME --allow-root; then
+                if [[ $BLOB_CDN_ENDPOINT ]]; then
+                    W3TC_CDN_CONFIGURE="BLOB"
+                    echo "INFO: Configuring CDN for Blob Storage at 10 minutes from now.."
+                else
+                    echo "CDN_CONFIGURATION_COMPLETE" >> $WORDPRESS_LOCK_FILE
+                fi
             fi
+        fi
+        
+        if ! [[ "$W3TC_CDN_CONFIGURE" == "None" ]]; then        
+            export W3TC_CDN_CONFIGURE
+            #start atd daemon
+            service atd start
+            service atd status
+            echo 'bash /usr/local/bin/w3tc_cdn_config.sh' | at now +10 minutes
         fi
     fi
 
