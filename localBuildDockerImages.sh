@@ -17,9 +17,11 @@ then
     exit
 fi
 
-while getopts ":s:" opt; do
+while getopts ":s:v:" opt; do
   case $opt in
     s) stackName="$OPTARG"
+    ;;        
+    v) stackVersion="$OPTARG"
     ;;        
     \?) echo "Invalid option -$OPTARG" >&2
         exit 1
@@ -27,8 +29,9 @@ while getopts ":s:" opt; do
   esac
 done
 
-echo "BuildNumber : $BuildNumber"
-echo "Stack       : $stackName"
+echo "BuildNumber   : $BuildNumber"
+echo "Stack         : $stackName"
+echo "Stack Version : $stackVersion"
 echo ""
 
 function buildAndTagImages()
@@ -40,7 +43,7 @@ function buildAndTagImages()
 
     local buildNumber=$3  
     buildNumber="${buildNumber:="$BuildNumber"}" 
-    BuildAndTagImages/build.sh $DockerFileDir appsvctest "Config" $BuildNumber $stackName "PullRequest" $githubRepo $buildNumber
+    BuildAndTagImages/build.sh $DockerFileDir appsvctest "Config" $BuildNumber $stackName "PullRequest" $githubRepo $buildNumber $stackVersion
 }
 
 

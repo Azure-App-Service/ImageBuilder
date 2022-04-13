@@ -50,7 +50,22 @@ temp_server_start() {
     mkdir -p /home/site/temp-root
     cp -r /usr/src/temp-server/* /home/site/temp-root/
     cp /usr/src/nginx/temp-server.conf /etc/nginx/conf.d/default.conf
-    /usr/sbin/nginx
+    local try_count=1
+    while [ $try_count -le 10 ]
+    do 
+        /usr/sbin/nginx
+        local port=`netstat -nlt|grep 80|wc -l`
+        local process=`ps -ef |grep nginx|grep -v grep |wc -l`
+        if [ $port -ge 1 ] && [ $process -ge 1 ]; then 
+            echo "INFO: Temporary Server started... "            
+            break
+        else            
+            echo "INFO: Nginx couldn't start, trying again..."
+            killall nginx 2> /dev/null 
+            sleep 5s
+        fi
+        let try_count+=1 
+    done
 }
 
 temp_server_stop() {
@@ -78,43 +93,26 @@ setup_wordpress() {
         IS_TEMP_SERVER_STARTED="True"
         temp_server_start
     fi
-    
-    if [ ! $(grep "GIT_PULL_COMPLETED" $WORDPRESS_LOCK_FILE) ]; then
-        local IS_GIT_PULL_SUCCESS="FALSE"
+
+    if [ $(grep "GIT_PULL_COMPLETED" $WORDPRESS_LOCK_FILE) ] &&  [ ! $(grep "WORDPRESS_PULL_COMPLETED" $WORDPRESS_LOCK_FILE) ]; then
+        echo "WORDPRESS_PULL_COMPLETED" >> $WORDPRESS_LOCK_FILE
+    fi
+
+    if [ ! $(grep "WORDPRESS_PULL_COMPLETED" $WORDPRESS_LOCK_FILE) ]; then
         while [ -d $WORDPRESS_HOME ]
         do
             mkdir -p /home/bak
             mv $WORDPRESS_HOME /home/bak/wordpress_bak$(date +%s)            
         done
         
-        GIT_REPO=${GIT_REPO:-https://github.com/azureappserviceoss/wordpress-azure}
-	    GIT_BRANCH=${GIT_BRANCH:-linux-appservice}
-	    echo "INFO: ++++++++++++++++++++++++++++++++++++++++++++++++++:"
-	    echo "REPO: "$GIT_REPO
-	    echo "BRANCH: "$GIT_BRANCH
-	    echo "INFO: ++++++++++++++++++++++++++++++++++++++++++++++++++:"
-
-        if git clone $GIT_REPO $WORDPRESS_HOME && cd $WORDPRESS_HOME; then
-            if [ "$GIT_BRANCH" != "master" ]; then
-                if git fetch origin \
-                && git branch --track $GIT_BRANCH origin/$GIT_BRANCH \
-                && git checkout $GIT_BRANCH; then
-                    IS_GIT_PULL_SUCCESS="TRUE"
-                fi
-            else
-                IS_GIT_PULL_SUCCESS="TRUE"
-            fi
-        fi
-
-        #remove .git
-        rm  -rf $WORDPRESS_HOME/.git
-
-        if [ "$IS_GIT_PULL_SUCCESS" == "TRUE" ]; then
-            echo "GIT_PULL_COMPLETED" >> $WORDPRESS_LOCK_FILE
+        mkdir -p $WORDPRESS_HOME
+        echo "INFO: Pulling WordPress code"
+        if cp -r $WORDPRESS_SOURCE/wordpress-azure/* $WORDPRESS_HOME; then
+            echo "WORDPRESS_PULL_COMPLETED" >> $WORDPRESS_LOCK_FILE
         fi
     fi
 
-    if [ $(grep "GIT_PULL_COMPLETED" $WORDPRESS_LOCK_FILE) ] &&  [ ! $(grep "WP_INSTALLATION_COMPLETED" $WORDPRESS_LOCK_FILE) ]; then
+    if [ $(grep "WORDPRESS_PULL_COMPLETED" $WORDPRESS_LOCK_FILE) ] &&  [ ! $(grep "WP_INSTALLATION_COMPLETED" $WORDPRESS_LOCK_FILE) ]; then
         if wp core install --url=$WEBSITE_HOSTNAME --title="${WORDPRESS_TITLE}" --admin_user=$WORDPRESS_ADMIN_USER --admin_password=$WORDPRESS_ADMIN_PASSWORD --admin_email=$WORDPRESS_ADMIN_EMAIL --skip-email --path=$WORDPRESS_HOME --allow-root; then
             echo "WP_INSTALLATION_COMPLETED" >> $WORDPRESS_LOCK_FILE
         fi
@@ -133,8 +131,16 @@ setup_wordpress() {
     fi
 
     if [ $(grep "WP_INSTALLATION_COMPLETED" $WORDPRESS_LOCK_FILE) ] && [ ! $(grep "SMUSH_PLUGIN_INSTALLED" $WORDPRESS_LOCK_FILE) ]; then
-        if wp plugin install wp-smushit --force --activate --path=$WORDPRESS_HOME --allow-root; then
-            echo "SMUSH_PLUGIN_INSTALLED" >> $WORDPRESS_LOCK_FILE
+        #backward compatibility for previous versions that don't have plugin source code in wordpress repo.
+        if [ $(grep "GIT_PULL_COMPLETED" $WORDPRESS_LOCK_FILE) ]; then
+            if wp plugin install wp-smushit --force --activate --path=$WORDPRESS_HOME --allow-root; then
+                echo "SMUSH_PLUGIN_INSTALLED" >> $WORDPRESS_LOCK_FILE
+            fi
+        else
+            if wp plugin deactivate wp-smushit --quiet --path=$WORDPRESS_HOME --allow-root \
+            && wp plugin activate wp-smushit --path=$WORDPRESS_HOME --allow-root; then
+                echo "SMUSH_PLUGIN_INSTALLED" >> $WORDPRESS_LOCK_FILE
+            fi
         fi
     fi
 
@@ -151,8 +157,16 @@ setup_wordpress() {
     fi
 
     if [ $(grep "WP_INSTALLATION_COMPLETED" $WORDPRESS_LOCK_FILE) ] && [ ! $(grep "W3TC_PLUGIN_INSTALLED" $WORDPRESS_LOCK_FILE) ]; then
-        if wp plugin install w3-total-cache --force --activate --path=$WORDPRESS_HOME --allow-root; then
-            echo "W3TC_PLUGIN_INSTALLED" >> $WORDPRESS_LOCK_FILE
+        #backward compatibility for previous versions that don't have plugin source code in wordpress repo.
+        if [ $(grep "GIT_PULL_COMPLETED" $WORDPRESS_LOCK_FILE) ]; then
+            if wp plugin install w3-total-cache --force --activate --path=$WORDPRESS_HOME --allow-root; then
+                echo "W3TC_PLUGIN_INSTALLED" >> $WORDPRESS_LOCK_FILE
+            fi
+        else
+            if wp plugin deactivate w3-total-cache --quiet --path=$WORDPRESS_HOME --allow-root \
+            && wp plugin activate w3-total-cache --path=$WORDPRESS_HOME --allow-root; then
+                echo "W3TC_PLUGIN_INSTALLED" >> $WORDPRESS_LOCK_FILE
+            fi
         fi
     fi
 
@@ -163,6 +177,33 @@ setup_wordpress() {
             echo "W3TC_PLUGIN_CONFIG_UPDATED" >> $WORDPRESS_LOCK_FILE
         fi
     fi	
+    
+    if [ $(grep "W3TC_PLUGIN_CONFIG_UPDATED" $WORDPRESS_LOCK_FILE) ] && [ ! $(grep "CDN_CONFIGURATION_COMPLETE" $WORDPRESS_LOCK_FILE) ]; then
+        if [[ $CDN_ENABLED ]] && [[ "$CDN_ENABLED" == "true" || "$CDN_ENABLED" == "TRUE" || "$CDN_ENABLED" == "True" ]];then
+            if [[ $CDN_ENDPOINT ]]; then
+                echo "INFO: Scheduling CDN configuration 10 minutes from now.."
+                #start atd daemon
+                service atd start
+                service atd status
+                echo 'bash /usr/local/bin/w3tc_cdn_config.sh' | at now +10 minutes
+            fi
+        fi
+    fi
+
+    if [  $(grep "WP_INSTALLATION_COMPLETED" $WORDPRESS_LOCK_FILE) ] &&  [ ! $(grep "WP_LANGUAGE_SETUP_COMPLETED" $WORDPRESS_LOCK_FILE) ] &&  [ ! $(grep "FIRST_TIME_SETUP_COMPLETED" $WORDPRESS_LOCK_FILE) ]; then
+	    if [[ $WORDPRESS_LOCALE_CODE ]] && [[ ! "$WORDPRESS_LOCALE_CODE" == "en_US"  ]]; then
+            if wp language core install $WORDPRESS_LOCALE_CODE --path=$WORDPRESS_HOME --allow-root \
+                && wp site switch-language $WORDPRESS_LOCALE_CODE --path=$WORDPRESS_HOME --allow-root \
+                && wp language theme install --all $WORDPRESS_LOCALE_CODE --path=$WORDPRESS_HOME --allow-root \
+                && wp language plugin install --all $WORDPRESS_LOCALE_CODE --path=$WORDPRESS_HOME --allow-root \
+                && wp language theme update --all --path=$WORDPRESS_HOME --allow-root \
+                && wp language plugin update --all --path=$WORDPRESS_HOME --allow-root; then
+                echo "WP_LANGUAGE_SETUP_COMPLETED" >> $WORDPRESS_LOCK_FILE
+            fi
+        else
+            echo "WP_LANGUAGE_SETUP_COMPLETED" >> $WORDPRESS_LOCK_FILE
+        fi
+    fi
 
     if [ $(grep "W3TC_PLUGIN_CONFIG_UPDATED" $WORDPRESS_LOCK_FILE) ] && [ $(grep "SMUSH_PLUGIN_CONFIG_UPDATED" $WORDPRESS_LOCK_FILE) ] &&  [ ! $(grep "FIRST_TIME_SETUP_COMPLETED" $WORDPRESS_LOCK_FILE) ]; then
         echo "FIRST_TIME_SETUP_COMPLETED" >> $WORDPRESS_LOCK_FILE
@@ -285,4 +326,5 @@ cp /usr/src/nginx/wordpress-server.conf /etc/nginx/conf.d/default.conf
 
 cd /usr/bin/
 supervisord -c /etc/supervisord.conf
+
 

@@ -14,12 +14,6 @@ schedules:
     exclude:
     - releases/*
     - releases/ancient/*
-- cron: "0 12 * * 0"
-  displayName: Weekly Sunday build
-  branches:
-    include:
-    - releases/*
-  always: true
 
 jobs:
 
@@ -172,6 +166,7 @@ jobs:
 - job: Job_DockerBuildWordPressImages
   displayName: Build WordPress Dev Images
   dependsOn: Job_GenerateDockerFiles
+  condition: and(succeeded(), not(startsWith(variables['Build.SourceBranch'], 'refs/heads/releases/')))
   pool:
     vmImage: ubuntu-18.04
   timeoutInMinutes: 100
