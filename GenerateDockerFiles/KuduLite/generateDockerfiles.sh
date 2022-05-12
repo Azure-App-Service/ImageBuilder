@@ -23,6 +23,8 @@ declare -r KUDULITE_BRANCH=$6
 declare -r APP_SVC_REPO_BRANCH="${KUDULITE_BRANCH:="dev"}"
 declare -r DYN_INST_REPO_DIR="$SYSTEM_ARTIFACTS_DIR/$STACK_NAME/GitRepo-DynInst"
 declare -r DYN_INST_REPO_BRANCH="${KUDULITE_BRANCH:="dev"}"
+declare -r BULLSEYE_REPO_DIR="$SYSTEM_ARTIFACTS_DIR/$STACK_NAME/GitRepo-Bullseye"
+declare -r BULLSEYE_REPO_BRANCH="${KUDULITE_BRANCH:="dev"}"
 
 function generateKuduLiteDockerFiles()
 {
@@ -72,6 +74,30 @@ function generateKuduLiteBusterInstallsDockerFiles()
     echo "Done."
 }
 
+function generateKuduLiteBullseyeInstallsDockerFiles()
+{
+    # Example line:
+    # 1.0 -> uses Oryx Base Image mcr.microsoft.com/oryx/github-actions-bullseye-$BASE_IMAGE_VERSION_STREAM_FEED
+
+    # Base Image, eg. github-actions-bullseye-20200626.1
+    BASE_IMAGE_NAME="${BASE_IMAGE_REPO_NAME}:github-actions-bullseye-$BASE_IMAGE_VERSION_STREAM_FEED"
+    CURR_VERSION_DIRECTORY="${BULLSEYE_REPO_DIR}/"
+    TARGET_DOCKERFILE="${CURR_VERSION_DIRECTORY}/Dockerfile"
+
+    #Rename Dockerfile for buster kudu
+    mv ${CURR_VERSION_DIRECTORY}/Dockerfile-Bullseye ${CURR_VERSION_DIRECTORY}/Dockerfile
+
+    echo "Generating App Service Dockerfile and dependencies for image '$BASE_IMAGE_NAME' in directory '$CURR_VERSION_DIRECTORY'..."
+
+    # Replace placeholders, changing sed delimeter since '/' is used in path
+    sed -i "s|BASE_IMAGE_NAME_PLACEHOLDER|$BASE_IMAGE_NAME|g" "$TARGET_DOCKERFILE"
+
+    # Register the generated docker files wwith metadata dir
+    echo "${BULLSEYE_REPO_DIR}, " > $METADATA_FILE
+
+    echo "Done."
+}
+
 function pullAppSvcRepo()
 {
     # KuduLite with all SDKs
@@ -82,6 +108,8 @@ function pullAppSvcRepo()
     git checkout $APP_SVC_REPO_BRANCH
     cd $ORIG_DIR
     chmod -R 777 $APP_SVC_REPO_DIR
+    # Adding a new line break so its easy to read the logs
+    echo
 
     # KuduLite with dynamic installs
     echo "Cloning App Service KuduLiteBuild Repository in $DYN_INST_REPO_DIR"
@@ -91,9 +119,22 @@ function pullAppSvcRepo()
     git checkout $DYN_INST_REPO_BRANCH
     cd $ORIG_DIR
     chmod -R 777 $DYN_INST_REPO_DIR
+    # Adding a new line break so its easy to read the logs
+    echo
+
+    # KuduLite with Bullseye
+    echo "Cloning App Service KuduLiteBuild Repository in $BULLSEYE_REPO_DIR"
+    git clone $APPSVC_KUDULITE_REPO $BULLSEYE_REPO_DIR
+    cd $BULLSEYE_REPO_DIR
+    echo "Checking out branch $BULLSEYE_REPO_BRANCH"
+    git checkout $BULLSEYE_REPO_BRANCH
+    cd $ORIG_DIR
+    chmod -R 777 $BULLSEYE_REPO_DIR
 }
 
 pullAppSvcRepo
 generateKuduLiteDockerFiles
 echo
 generateKuduLiteBusterInstallsDockerFiles
+echo
+generateKuduLiteBullseyeInstallsDockerFiles

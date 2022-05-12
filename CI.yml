@@ -217,6 +217,25 @@ jobs:
       filesRootPath: GitRepo-DynInst
       imgTag: buster_$(Build.BuildNumber)
 
+- job: Job_BuildKuduLiteBullseyeImage
+  displayName: Build KuduLite Bullseye Image
+  dependsOn: Job_GenerateDockerFiles
+  pool:
+    vmImage: ubuntu-18.04
+  timeoutInMinutes: 100
+  steps:
+  - script: |
+      echo "##vso[task.setvariable variable=InitialChecks;]true"
+      echo "##vso[task.setvariable variable=GenerateDockerFiles;]true"
+      echo "##vso[task.setvariable variable=BuildBuildImages;]true"
+      echo "##vso[task.setvariable variable=PushBuildImages;]true"
+      echo "##vso[task.setvariable variable=PushRuntimeImages;]false"
+  - template: BuildAndTagImages/buildImageJob.yml
+    parameters:
+      stackName: KuduLite
+      filesRootPath: GitRepo-Bullseye
+      imgTag: bullseye_$(Build.BuildNumber)
+
 - job: Job_BuildStaticSiteImage
   displayName: Build Static Site Dev Images
   dependsOn: Job_GenerateDockerFiles
@@ -260,6 +279,7 @@ jobs:
   - Job_DockerBuildPhpImages
   - Job_DockerBuildPhpXdebugImages
   - Job_BuildKuduLiteImage
+  - Job_BuildKuduLiteBullseyeImage
   - Job_BuildStaticSiteImage
   pool:
     vmImage: ubuntu-18.04
@@ -289,3 +309,9 @@ jobs:
       echo "##vso[task.setvariable variable=PushBuildImages;]false"
       echo "##vso[task.setvariable variable=PushRuntimeImages;]false"
 trigger: none
+
+pr:
+  paths:
+    exclude: 
+      - "Kudulite-HotPatch/*"
+      - "v2/*"

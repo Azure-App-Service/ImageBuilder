@@ -1,0 +1,57 @@
+resources:
+- repo: self
+  fetchDepth: 15
+
+variables:
+- group: AppServiceLinux
+
+jobs:
+- job: Job_CleanUp
+  displayName: Clean Machine
+  pool:
+    vmImage: ubuntu-18.04
+  timeoutInMinutes: 150
+  steps:
+  - template: ../../CleanUp/cleanImageCache.yml
+
+- job: Job_GenerateDockerFiles
+  displayName: Generate DockerFiles
+  dependsOn: Job_CleanUp
+  pool:
+    vmImage: ubuntu-18.04
+  timeoutInMinutes: 100
+  steps:
+  - script: |
+      echo "##vso[task.setvariable variable=InitialChecks;]true"
+      echo "##vso[task.setvariable variable=GenerateDockerFiles;]false"
+      echo "##vso[task.setvariable variable=BuildBuildImages;]false"
+      echo "##vso[task.setvariable variable=PushBuildImages;]false"
+      echo "##vso[task.setvariable variable=PushRuntimeImages;]false"
+    displayName: 'Generate Dockerfile for Kudulite HotPatch'
+  - template: generateDockerfilesforKuduliteHotPatchImageJob.yaml
+
+- job: Job_BuildKuduLiteImage
+  displayName: Build KuduLite Dev Images
+  dependsOn: Job_GenerateDockerFiles
+  pool:
+    vmImage: ubuntu-18.04
+  timeoutInMinutes: 100
+  steps:
+  - script: |
+      echo "##vso[task.setvariable variable=InitialChecks;]true"
+      echo "##vso[task.setvariable variable=GenerateDockerFiles;]true"
+      echo "##vso[task.setvariable variable=BuildBuildImages;]true"
+      echo "##vso[task.setvariable variable=PushBuildImages;]true"
+      echo "##vso[task.setvariable variable=PushRuntimeImages;]false"
+  - template: buildKuduliteHotPatchImageJob.yaml
+    parameters:
+      stackName: KuduLite
+
+trigger: none
+
+pr:
+  paths:
+    include: 
+      - "../*"
+    exclude:
+      - "../LocalDevelopment/*"

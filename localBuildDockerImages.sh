@@ -60,6 +60,7 @@ then
     buildAndTagImages "wordpress"
     buildAndTagImages "kudulite"
     buildAndTagImages "kudulite" "GitRepo-DynInst" dynamic-$BuildNumber
+    buildAndTagImages "kudulite" "GitRepo-Bullseye" bullseye-$BuildNumber
     exit
 fi
 
@@ -96,6 +97,10 @@ case $stackName in
 
   "dynamic")
     buildAndTagImages "kudulite" "GitRepo-DynInst" dynamic-$BuildNumber
+    ;;
+
+  "bullseye")
+    buildAndTagImages "kudulite" "GitRepo-Bullseye" bullseye-$BuildNumber
     ;;
 
   *)

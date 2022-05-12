@@ -2,7 +2,7 @@ parameters:
   ascName: WAWS_Container_Images
   acrName: wawsimages.azurecr.io
   baseImageName: "mcr.microsoft.com/oryx"
-  baseImageVersion: "20220329.1"
+  baseImageVersion: "20220502.2"
   appSvcGitUrl: "https://github.com/Azure-App-Service"
   kuduliteInternalRepo: $(KUDU_REPO)
   DiagnosticServerInternalRepo: $(DiagnosticServer_REPO)
