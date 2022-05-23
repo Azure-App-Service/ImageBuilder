@@ -60,6 +60,9 @@ abstract class Abstract_Integration {
 
 		// Disable setting.
 		add_filter( 'wp_smush_integration_status_' . $this->module, array( $this, 'setting_status' ) );
+
+		// Show submit button if one of the integrations available.
+		add_filter( 'wp_smush_integration_show_submit', array( $this, 'enable_submit_button') );
 	}
 
 	/**
@@ -71,6 +74,19 @@ abstract class Abstract_Integration {
 	 */
 	public function setting_status() {
 		return ! $this->enabled;
+	}
+
+	/**
+	 * Whether to enable the submit button or not.
+	 *
+	 * @since 3.9.8
+	 *
+	 * @param bool $enabled Current status.
+	 *
+	 * @return bool
+	 */
+	public function enable_submit_button( $enabled ){
+		return $enabled || $this->enabled;
 	}
 
 }

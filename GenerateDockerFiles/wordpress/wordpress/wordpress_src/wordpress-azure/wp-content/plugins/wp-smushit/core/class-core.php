@@ -176,6 +176,12 @@ class Core extends Stats {
 		 * work, also load after settings have been saved on init action.
 		 */
 		add_action( 'plugins_loaded', array( $this, 'load_libs' ), 90 );
+
+		/**
+		 * Maybe need to load some modules in REST API mode.
+		 * E.g. S3.
+		 */
+		add_action( 'rest_api_init', array( $this, 'load_libs_for_rest_api' ), 99 );
 	}
 
 	/**
@@ -202,6 +208,16 @@ class Core extends Stats {
 		new Integrations\Composer();
 		new Integrations\Envira( $this->mod->cdn );
 		new Integrations\Avada( $this->mod->cdn );
+	}
+
+	/**
+	 * Load lib for REST API.
+	 */
+	public function load_libs_for_rest_api() {
+		// Load S3 if there is media REST API.
+		if ( ! Helper::is_non_rest_media() && ! $this->s3 ) {
+			$this->s3 = new Integrations\S3();
+		}
 	}
 
 	/**
@@ -553,7 +569,7 @@ class Core extends Stats {
 			return false;
 		}
 
-		if ( ! Settings::get_instance()->get( 'resize' ) ) {
+		if ( ! $this->mod->resize->is_active() ) {
 			return $threshold;
 		}
 

@@ -419,10 +419,10 @@ class Bulk extends Abstract_Summary_Page implements Interface_Page {
 				<span id="backup-label" class="sui-toggle-label">
 					<?php echo esc_html( Settings::get_setting_data( 'backup', 'label' ) ); ?>
 				</span>
+				<span class="sui-description sui-toggle-description" id="backup-desc">
+					<?php echo esc_html( Settings::get_setting_data( 'backup', 'desc' ) ); ?>
+				</span>
 			</label>
-			<span class="sui-description sui-toggle-description" id="backup-desc">
-				<?php echo esc_html( Settings::get_setting_data( 'backup', 'desc' ) ); ?>
-			</span>
 
 			<div class="sui-toggle-content <?php echo $this->settings->get( 'original' ) ? 'sui-hidden' : ''; ?>" id="backup-notice">
 				<div class="sui-notice" style="margin-top: 10px">
@@ -481,10 +481,10 @@ class Bulk extends Abstract_Summary_Page implements Interface_Page {
 				<span id="no_scale-label" class="sui-toggle-label">
 					<?php echo esc_html( Settings::get_setting_data( 'no_scale', 'label' ) ); ?>
 				</span>
+				<span class="sui-description sui-toggle-description" id="no_scale-desc">
+					<?php echo esc_html( Settings::get_setting_data( 'no_scale', 'desc' ) ); ?>
+				</span>
 			</label>
-			<span class="sui-description sui-toggle-description" id="no_scale-desc">
-				<?php echo esc_html( Settings::get_setting_data( 'no_scale', 'desc' ) ); ?>
-			</span>
 		</div>
 		<?php
 	}

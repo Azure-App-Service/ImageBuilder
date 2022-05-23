@@ -18,6 +18,13 @@ if ( ! defined( 'WPINC' ) ) {
 class Lazy extends Abstract_Module {
 
 	/**
+	 * Module slug.
+	 *
+	 * @var string
+	 */
+	protected $slug = 'lazy_load';
+
+	/**
 	 * Lazy loading settings.
 	 *
 	 * @since 3.2.0
@@ -64,7 +71,7 @@ class Lazy extends Abstract_Module {
 	 */
 	public function init() {
 		// Only run on front end and if lazy loading is enabled.
-		if ( is_admin() || ! $this->settings->get( 'lazy_load' ) ) {
+		if ( is_admin() || ! $this->is_active() ) {
 			return;
 		}
 
@@ -88,7 +95,7 @@ class Lazy extends Abstract_Module {
 		// Allow lazy load attributes in img tag.
 		add_filter( 'wp_kses_allowed_html', array( $this, 'add_lazy_load_attributes' ) );
 
-		$this->parser->enable( 'lazy_load' );
+		$this->parser->enable( $this->slug );
 		if ( isset( $this->options['format']['iframe'] ) && $this->options['format']['iframe'] ) {
 			$this->parser->enable( 'iframes' );
 		}
@@ -401,6 +408,10 @@ class Lazy extends Abstract_Module {
 		$is_gravatar = false !== strpos( $src, 'gravatar.com' );
 
 		$path = wp_parse_url( $src, PHP_URL_PATH );
+		// Make sure $path is not null, because passing null to parameter is deprecated in PHP 8.1.
+		if ( empty( $path ) ) {
+			return $image;
+		}
 		$ext  = strtolower( pathinfo( $path, PATHINFO_EXTENSION ) );
 		$ext  = 'jpg' === $ext ? 'jpeg' : $ext;
 

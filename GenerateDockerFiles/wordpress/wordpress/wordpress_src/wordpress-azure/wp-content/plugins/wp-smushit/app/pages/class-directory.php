@@ -66,7 +66,7 @@ class Directory extends Abstract_Summary_Page implements Interface_Page {
 		$errors = 0;
 		$images = array();
 
-		$scan = filter_input( INPUT_GET, 'scan', FILTER_SANITIZE_STRING );
+		$scan = filter_input( INPUT_GET, 'scan', FILTER_SANITIZE_SPECIAL_CHARS );
 		if ( 'done' === $scan ) {
 			$images = $core->mod->dir->get_image_errors();
 			$errors = $core->mod->dir->get_image_errors_count();

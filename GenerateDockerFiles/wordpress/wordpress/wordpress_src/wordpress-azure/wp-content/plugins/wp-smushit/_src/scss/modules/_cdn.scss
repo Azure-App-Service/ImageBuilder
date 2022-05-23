@@ -14,9 +14,16 @@
             vertical-align: top;
         }
 
-        &.wrap-smush-cdn .sui-block-content-center p {
-            max-width: 600px;
-            margin: 20px auto 30px;
+        &.wrap-smush-cdn {
+            .sui-block-content-center p {
+                max-width: 600px;
+                margin: 20px auto 30px;
+            }
+            .sui-box-header .sui-actions-right .sui-icon-info{
+                font-size: 16px;
+                position: relative;
+                top: 1.5px;
+            }
         }
 
         .sui-cdn {
@@ -24,7 +31,6 @@
                 margin-top: 0;
             }
         }
-
         .wp-smush-stats {
             display: flex;
             align-items: center;

@@ -991,7 +991,7 @@ class Smush {
 			return this.deferred;
 		}
 
-		let nonceValue = '';
+		let nonceValue = window.wp_smush_msgs.nonce;
 		// Remove from array while processing so we can continue where left off.
 		this.current_id = this.is_bulk
 			? this.ids.shift()
@@ -1001,7 +1001,7 @@ class Smush {
 		Smush.updateSmushIds( this.current_id );
 
 		const nonceField = this.button.parent().find( '#_wp_smush_nonce' );
-		if ( nonceField ) {
+		if ( nonceField.length > 0 ) {
 			nonceValue = nonceField.val();
 		}
 

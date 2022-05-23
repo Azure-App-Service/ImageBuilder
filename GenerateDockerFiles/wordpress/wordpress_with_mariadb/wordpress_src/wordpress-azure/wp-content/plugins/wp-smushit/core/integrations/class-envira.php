@@ -40,14 +40,12 @@ class Envira {
 			return;
 		}
 
-		$settings = Settings::get_instance();
-
-		if ( $settings->get( 'lazy_load' ) ) {
+		if ( Settings::get_instance()->get( 'lazy_load' ) ) {
 			add_filter( 'smush_skip_image_from_lazy_load', array( $this, 'skip_lazy_load' ), 10, 3 );
 			add_filter( 'envira_gallery_indexable_images', array( $this, 'add_no_lazyload_class' ) );
 		}
 
-		if ( $settings->get( 'cdn' ) ) {
+		if ( $cdn->is_active() ) {
 			$this->cdn = $cdn;
 			add_filter( 'smush_cdn_image_tag', array( $this, 'replace_cdn_links' ) );
 		}

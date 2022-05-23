@@ -8,7 +8,6 @@
 
 namespace Smush\Core\Api;
 
-use Exception;
 use WP_Error;
 
 if ( ! defined( 'WPINC' ) ) {

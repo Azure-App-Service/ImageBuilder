@@ -1,0 +1,36 @@
+parameters:
+  baseImageVersion: "20220502.2"
+  stackName: ""
+  stackVersion: ""
+  ascName: "WAWS_Container_Images"
+  acrName: wawsimages.azurecr.io
+  baseImageName: mcr.microsoft.com/oryx
+  
+steps:
+- task: ComponentGovernanceComponentDetection@0
+
+- task: ShellScript@2
+  displayName: 'Generate Dockerfile and its dependencies'
+  inputs:
+    scriptPath: $(System.DefaultWorkingDirectory)/v2/src/generate_dockerfiles_for_runtime_images.sh
+    args: ${{ parameters.stackName }} $(Build.ArtifactStagingDirectory) ${{ parameters.baseImageName }} ${{ parameters.baseImageVersion }} "$(System.DefaultWorkingDirectory)/v2/src/${{ parameters.stackName }}" ${{ parameters.stackVersion }}
+
+- task: Docker@2
+  displayName: Logout of ACR
+  inputs:
+    command: logout
+    azureSubscriptionEndpoint: ${{ parameters.ascName }}
+    azureContainerRegistry: ${{ parameters.acrName }}
+
+- task: Docker@1
+  displayName: Container registry login
+  inputs:
+    command: login
+    azureSubscriptionEndpoint: ${{ parameters.ascName }}
+    azureContainerRegistry: ${{ parameters.acrName }}
+
+- task: ShellScript@2
+  displayName: 'Building Image'
+  inputs:
+    scriptPath: $(System.DefaultWorkingDirectory)/v2/src/build_runtime_images.sh
+    args: $(Build.ArtifactStagingDirectory) appsvctest "$(System.DefaultWorkingDirectory)/v2/src/${{ parameters.stackName }}" $(Build.BuildNumber) ${{ parameters.stackName }} $(Build.Reason) ${{ parameters.stackVersion }}

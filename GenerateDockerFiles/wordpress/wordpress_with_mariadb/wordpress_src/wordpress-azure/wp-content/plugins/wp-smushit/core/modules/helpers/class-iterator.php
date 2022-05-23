@@ -23,7 +23,7 @@ class Iterator extends RecursiveFilterIterator {
 	 *
 	 * @return bool
 	 */
-	public function accept() {
+	public function accept(): bool {
 		$path = $this->current()->getPathname();
 
 		if ( $this->isDir() && ! WP_Smush::get_instance()->core()->mod->dir->skip_dir( $path ) ) {

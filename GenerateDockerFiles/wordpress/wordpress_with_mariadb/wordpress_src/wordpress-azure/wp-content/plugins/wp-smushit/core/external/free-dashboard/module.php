@@ -177,8 +177,8 @@ if ( ! class_exists( 'WDev_Frash' ) ) {
 		 * @since  1.0.0
 		 */
 		public function wp_ajax_frash_act() {
-			$plugin = filter_input( INPUT_POST, 'plugin_id', FILTER_SANITIZE_STRING );
-			$type   = filter_input( INPUT_POST, 'type', FILTER_SANITIZE_STRING );
+			$plugin = filter_input( INPUT_POST, 'plugin_id', FILTER_SANITIZE_SPECIAL_CHARS );
+			$type   = filter_input( INPUT_POST, 'type', FILTER_SANITIZE_SPECIAL_CHARS );
 
 			$this->mark_as_done( $plugin, $type, 'ok' );
 
@@ -191,8 +191,8 @@ if ( ! class_exists( 'WDev_Frash' ) ) {
 		 * @since  1.0.0
 		 */
 		public function wp_ajax_frash_dismiss() {
-			$plugin = filter_input( INPUT_POST, 'plugin_id', FILTER_SANITIZE_STRING );
-			$type   = filter_input( INPUT_POST, 'type', FILTER_SANITIZE_STRING );
+			$plugin = filter_input( INPUT_POST, 'plugin_id', FILTER_SANITIZE_SPECIAL_CHARS );
+			$type   = filter_input( INPUT_POST, 'type', FILTER_SANITIZE_SPECIAL_CHARS );
 
 			$this->mark_as_done( $plugin, $type, 'ignore' );
 
@@ -246,7 +246,7 @@ if ( ! class_exists( 'WDev_Frash' ) ) {
 			$now = time();
 
 			// The "current" time can be changed via $_GET to test the module.
-			$custom_time = filter_input( INPUT_GET, 'time', FILTER_SANITIZE_STRING );
+			$custom_time = filter_input( INPUT_GET, 'time', FILTER_SANITIZE_SPECIAL_CHARS );
 			if ( defined( 'WP_DEBUG' ) && WP_DEBUG && ! empty( $custom_time ) ) {
 				if ( ' ' === $custom_time[0] ) {
 					$custom_time[0] = '+';

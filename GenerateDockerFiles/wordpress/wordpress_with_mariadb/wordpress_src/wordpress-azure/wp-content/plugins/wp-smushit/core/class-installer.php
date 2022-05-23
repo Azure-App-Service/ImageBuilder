@@ -36,6 +36,7 @@ class Installer {
 		}
 
 		Modules\CDN::unschedule_cron();
+		Settings::get_instance()->delete_setting( 'wp-smush-cdn_status' );
 
 		if ( is_multisite() && is_network_admin() ) {
 			/**
@@ -45,6 +46,8 @@ class Installer {
 			 */
 			update_site_option( 'wp-smush-networkwide', 1 );
 		}
+
+		delete_site_option( 'wp_smush_api_auth' );
 	}
 
 	/**

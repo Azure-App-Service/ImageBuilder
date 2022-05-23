@@ -483,7 +483,7 @@ class Settings {
 		$access = get_site_option( 'wp-smush-networkwide' );
 
 		// Check to if the settings update is network-wide or not ( only if in network admin ).
-		$action = filter_input( INPUT_POST, 'action', FILTER_SANITIZE_STRING );
+		$action = filter_input( INPUT_POST, 'action', FILTER_SANITIZE_SPECIAL_CHARS );
 
 		$is_network_admin = is_network_admin() || 'save_settings' === $action;
 
@@ -661,7 +661,7 @@ class Settings {
 			delete_site_option( 'wp-smush-hide_s3support_alert' );
 		}
 
-		$page = filter_input( INPUT_POST, 'page', FILTER_SANITIZE_STRING );
+		$page = filter_input( INPUT_POST, 'page', FILTER_SANITIZE_SPECIAL_CHARS );
 
 		if ( ! isset( $page ) ) {
 			wp_send_json_error(
@@ -711,7 +711,7 @@ class Settings {
 		}
 
 		if ( 'settings' === $page ) {
-			$tab = filter_input( INPUT_POST, 'tab', FILTER_SANITIZE_STRING );
+			$tab = filter_input( INPUT_POST, 'tab', FILTER_SANITIZE_SPECIAL_CHARS );
 			if ( ! isset( $tab ) ) {
 				wp_send_json_error(
 					array( 'message' => __( 'The tab these settings belong to is missing.', 'wp-smushit' ) )
@@ -793,6 +793,7 @@ class Settings {
 				$response = WP_Smush::get_instance()->api()->enable( true );
 			}
 
+			// Logged error inside API.
 			if ( ! is_wp_error( $response ) ) {
 				$response = json_decode( $response['body'] );
 				$this->set_setting( 'wp-smush-cdn_status', $response->data );
@@ -810,23 +811,29 @@ class Settings {
 
 		$args = array(
 			'format'          => array(
-				'filter' => FILTER_VALIDATE_BOOLEAN,
-				'flags'  => FILTER_REQUIRE_ARRAY,
+				'filter'  => FILTER_VALIDATE_BOOLEAN,
+				'flags'   => FILTER_REQUIRE_ARRAY,
 			),
 			'output'          => array(
-				'filter' => FILTER_VALIDATE_BOOLEAN,
-				'flags'  => FILTER_REQUIRE_ARRAY,
+				'filter'  => FILTER_VALIDATE_BOOLEAN,
+				'flags'   => FILTER_REQUIRE_ARRAY,
 			),
 			'animation'       => array(
-				'filter' => FILTER_SANITIZE_STRING,
-				'flags'  => FILTER_REQUIRE_ARRAY,
+				'filter'  => FILTER_SANITIZE_SPECIAL_CHARS,
+				'flags'   => FILTER_REQUIRE_ARRAY,
 			),
 			'include'         => array(
-				'filter' => FILTER_VALIDATE_BOOLEAN,
-				'flags'  => FILTER_REQUIRE_ARRAY,
+				'filter'  => FILTER_VALIDATE_BOOLEAN,
+				'flags'   => FILTER_REQUIRE_ARRAY,
 			),
-			'exclude-pages'   => FILTER_SANITIZE_STRING,
-			'exclude-classes' => FILTER_SANITIZE_STRING,
+			'exclude-pages'   => array(
+				'filter'  => FILTER_CALLBACK,
+				'options' => 'sanitize_text_field',
+			),
+			'exclude-classes' => array(
+				'filter'  => FILTER_CALLBACK,
+				'options' => 'sanitize_text_field',
+			),
 			'footer'          => FILTER_VALIDATE_BOOLEAN,
 			'native'          => FILTER_VALIDATE_BOOLEAN,
 			'noscript'        => FILTER_VALIDATE_BOOLEAN,
@@ -909,8 +916,8 @@ class Settings {
 	private function parse_access_settings() {
 		$current_value = get_site_option( 'wp-smush-networkwide' );
 
-		$new_value = filter_input( INPUT_POST, 'wp-smush-subsite-access', FILTER_SANITIZE_STRING );
-		$access    = filter_input( INPUT_POST, 'wp-smush-access', FILTER_SANITIZE_STRING, FILTER_REQUIRE_ARRAY );
+		$new_value = filter_input( INPUT_POST, 'wp-smush-subsite-access', FILTER_SANITIZE_SPECIAL_CHARS );
+		$access    = filter_input( INPUT_POST, 'wp-smush-access', FILTER_SANITIZE_SPECIAL_CHARS, FILTER_REQUIRE_ARRAY );
 
 		if ( 'custom' === $new_value ) {
 			$new_value = $access;

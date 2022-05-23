@@ -78,13 +78,6 @@ import Scanner from '../smush/directory-scanner';
 			$( '#wp-smush-select-dir' ).on( 'click', function( e ) {
 				e.preventDefault();
 
-				// If disabled, do not process
-				if ( $( this ).prop( 'disabled' ) ) {
-					return;
-				}
-
-				const button = $( this );
-
 				$( 'div.wp-smush-list-dialog div.sui-box-body' ).css( {
 					opacity: '0.8',
 				} );
@@ -92,8 +85,7 @@ import Scanner from '../smush/directory-scanner';
 					'click'
 				);
 
-				// Disable button
-				button.prop( 'disabled', true );
+				const button = $( this );
 
 				// Display the spinner.
 				button.addClass('sui-button-onload');
@@ -115,13 +107,17 @@ import Scanner from '../smush/directory-scanner';
 				};
 
 				$.post( ajaxurl, param, function( response ) {
-					window.SUI.closeModal();
-
 					if ( response.success ) {
+						// Close the modal.
+						window.SUI.closeModal();
+
 						self.scanner = new Scanner( response.data, 0 );
 						self.showProgressDialog( response.data );
 						self.scanner.scan();
 					} else {
+						// Remove the spinner.
+						button.removeClass('sui-button-onload');
+
 						window.SUI.openNotice(
 							'wp-smush-ajax-notice',
 							response.data.message,

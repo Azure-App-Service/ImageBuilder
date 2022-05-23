@@ -76,7 +76,7 @@ class Common {
 		add_action( 'give_donation_form_top', array( $this, 'givewp_skip_image_lazy_load' ), 0 );
 
 		// Thumbnail regeneration handler.
-		add_action( 'wp_update_attachment_metadata', array( $this, 'thumbnail_regenerate_handler' ), 10, 2 );
+		add_filter( 'wp_generate_attachment_metadata', array( $this, 'maybe_handle_thumbnail_generation' ) );
 	}
 
 	/**
@@ -178,10 +178,15 @@ class Common {
 		/**
 		 * Allows to skip a image from smushing
 		 *
-		 * @param bool , Smush image or not
-		 * @$size string, Size of image being smushed
+		 * @param bool   $smush_image Smush image or not
+		 * @param string $image_size  Size of image being smushed
+		 * @param string $retina_file Retina file path.
+		 * @param int    $id          Attachment ID.
+		 *
+		 * @since 3.9.6 Add two parameters for the filter.
 		 */
-		$smush_image = apply_filters( 'wp_smush_media_image', true, $image_size );
+		$smush_image = apply_filters( 'wp_smush_media_image', true, $image_size, $retina_file, $id );
+
 		if ( ! $smush_image ) {
 			return;
 		}
@@ -275,7 +280,7 @@ class Common {
 	 */
 	public function wpml_ignore_duplicate_attachment( $attachment_id, $duplicated_attachment_id ) {
 		// Ignore the image from Smush if duplicate.
-		update_post_meta( $duplicated_attachment_id, 'wp-smush-ignore-bulk', 'true' );
+		Helper::ignore_file( $duplicated_attachment_id );
 	}
 
 	/**
@@ -290,7 +295,7 @@ class Common {
 	 */
 	public function wpml_undo_ignore_attachment( $attachment_id ) {
 		// Delete ignore flag.
-		delete_post_meta( $attachment_id, 'wp-smush-ignore-bulk' );
+		Helper::undo_ignored_file( $attachment_id );
 	}
 
 	/**
@@ -454,7 +459,7 @@ class Common {
 
 		foreach ( $matches as $key => $url ) {
 			// Only use the match for the thumbnail URL if it's supported.
-			if ( 'thumb' !== $key || ! $cdn->is_supported_path( $url[0] ) ) {
+			if ( 'thumb' !== $key || empty( $url[0] ) || ! $cdn->is_supported_path( $url[0] ) ) {
 				continue;
 			}
 
@@ -557,6 +562,28 @@ class Common {
 	}
 
 	/**
+	 * Add method to handle  thumbnail generation.
+	 *
+	 * We use this trick to call self::thumbnail_regenerate_handler()
+	 * to avoid it called several times while calling wp_generate_attachment_metadata().
+	 * 1. wp_generate_attachment_metadata -> wp_create_image_subsizes -> wp_update_attachment_metadata().
+	 * 2. wp_generate_attachment_metadata -> _wp_make_subsizes        -> wp_update_attachment_metadata().
+	 * 3. After calling wp_generate_attachment_metadata() => We should only add our filter here.
+	 *
+	 * @param  array $metadata Image metadata.
+	 * @return array The provided metadata.
+	 */
+	public function maybe_handle_thumbnail_generation( $metadata ) {
+		/**
+		 * Add filter to handle thumbnail generation.
+		 * We use a big priority because it seems WP has an issue for this case,
+		 * after we remove this filter, all registered filters after this priority of this hook will not call.
+		 */
+		add_filter( 'wp_update_attachment_metadata', array( $this, 'thumbnail_regenerate_handler' ), 99999, 2 ); // S3 is using priority 110.
+		return $metadata;
+	}
+
+	/**
 	 * Callback for 'wp_update_attachment_metadata' WordPress hook used by Smush to detect
 	 * regenerated thumbnails and mark them as pending for (re)smush.
 	 *
@@ -565,65 +592,83 @@ class Common {
 	 * @param array $new_meta New metadata.
 	 * @param int   $attachment_id The attachment ID.
 	 *
+	 * @since 3.9.6 Disable this filter while async uploading,
+	 * and update compatible with S3, and only call it after generated metadata.
+	 *
 	 * @return array
 	 */
 	public function thumbnail_regenerate_handler( $new_meta, $attachment_id ) {
-		// Skip if the attachment is not an image or does not have thumbnails.
-		if ( ! wp_attachment_is_image( $attachment_id ) || empty( $new_meta['sizes'] ) ) {
+		// Remove the filter as we are no longer need it.
+		remove_filter( 'wp_update_attachment_metadata', array( $this, 'thumbnail_regenerate_handler' ), 99999 );
+		/**
+		 * Skip if there is WP uploading a new image,
+		 * or the attachment is not an image or does not have thumbnails.
+		 */
+		if (
+			empty( $new_meta['sizes'] )
+			// Async uploading.
+			// phpcs:ignore
+			|| isset( $_POST['post_id'] ) || isset( $_FILES['async-upload'] )
+			// Smushed it, don't need to check it again.
+			|| did_action( 'wp_smush_before_smush_file' )
+			// Disable when restoring.
+			|| did_action( 'wp_smush_before_restore_backup' )
+			// Only support Image.
+			|| ! Helper::is_smushable( $attachment_id )
+		) {
 			return $new_meta;
 		}
 
-		// Skip if the attachment has an active smush operation.
-		if ( false !== get_option( 'smush-in-progress-' . $attachment_id, false ) ) {
+		// Skip if the attachment has an active smush operation or in being restored by Smush or ignored.
+		if ( Helper::file_in_progress( $attachment_id ) || Helper::is_ignored( $attachment_id ) ) {
 			return $new_meta;
 		}
 
-		// Skip if the attachment is being restored by Smush.
-		if ( false !== get_option( 'wp-smush-restore-' . $attachment_id, false ) ) {
-			return $new_meta;
-		}
-
-		$smush_key  = Smush::$smushed_meta_key;
-		$smush_meta = get_post_meta( $attachment_id, $smush_key, true );
+		$smush_meta = get_post_meta( $attachment_id, Smush::$smushed_meta_key, true );
 
 		// Skip attachments without Smush meta key.
 		if ( empty( $smush_meta ) ) {
 			return $new_meta;
 		}
 
-		$size_increased        = false;
-		$offload_media_enabled = class_exists( '\Amazon_S3_And_CloudFront' );
-
-		if ( ! $offload_media_enabled ) {
-			// We need only the last $new_meta['sizes'] element of each subsequent call
-			// to wp_update_attachment_metadata() made by wp_create_image_subsizes().
-			$size = array_keys( $new_meta['sizes'] )[ count( $new_meta['sizes'] ) - 1 ];
-
-			$uploads_dir = dirname( Helper::original_file() . $new_meta['file'] );
-			$file_name   = $uploads_dir . '/' . $new_meta['sizes'][ $size ]['file'];
-
-			$actual_size = is_file( $file_name ) ? filesize( $file_name ) : false;
-			$stored_size = isset( $smush_meta['sizes'][ $size ]->size_after ) ? $smush_meta['sizes'][ $size ]->size_after : false;
-
-			// Only do the comparison if we have both the actual and the database stored size.
-			if ( false !== $actual_size && false !== $stored_size ) {
-				$size_increased = $actual_size > $stored_size;
-			}
+		$size_increased = false;
+		/**
+		 * Get attached file
+		 * If there is generating the image, S3 also downloaded it,
+		 * so we don't need to download it if it doesn't exist.
+		 */
+		$attached_file = Helper::get_attached_file( $attachment_id, 'original' );// S3+.
+		// If the main file does not exist, there is not generating the thumbnail, return.
+		if ( ! file_exists( $attached_file ) ) {
+			return $new_meta;
 		}
 
-		// File size increased or WP Offload Media plugin enabled? Let's remove all
+		// We need only the last $new_meta['sizes'] element of each subsequent call
+		// to wp_update_attachment_metadata() made by wp_create_image_subsizes().
+		$size = array_keys( $new_meta['sizes'] )[ count( $new_meta['sizes'] ) - 1 ];
+
+		$file_dir  = dirname( $attached_file );
+		$file_name = $file_dir . '/' . $new_meta['sizes'][ $size ]['file'];
+
+		$actual_size = is_file( $file_name ) ? filesize( $file_name ) : false;
+		$stored_size = isset( $smush_meta['sizes'][ $size ]->size_after ) ? $smush_meta['sizes'][ $size ]->size_after : false;
+
+		// Only do the comparison if we have both the actual and the database stored size.
+		if ( $actual_size && $stored_size ) {
+			$size_increased = $actual_size > 1.01 * $stored_size;// Not much we can do if save less than 1%.
+		}
+
+		// File size increased? Let's remove all
 		// Smush related meta keys for this attachment.
-		if ( $size_increased || $offload_media_enabled ) {
-			// Main stats.
-			delete_post_meta( $attachment_id, $smush_key );
-			// Lossy flag.
-			delete_post_meta( $attachment_id, 'wp-smush-lossy' );
-			// Resize savings.
-			delete_post_meta( $attachment_id, 'wp-smush-resize_savings' );
-			// PNG to JPG conversion savings.
-			delete_post_meta( $attachment_id, 'wp-smush-pngjpg_savings' );
-			// Finally, remove the attachment ID from cache.
-			WP_Smush::get_instance()->core()->remove_from_smushed_list( $attachment_id );
+		if ( $size_increased ) {
+			/**
+			 * When regenerate an image, we only generate the sub-sizes,
+			 * so we don't need to delete the saving data of PNG2JPG.
+			 * And similar for resizing, we also added filter for big_image_size_threshold,
+			 * and we don't use the resizing meta for any conditional, so it's ok to keep it.
+			 */
+			// Remove stats and update cache.
+			WP_Smush::get_instance()->core()->remove_stats( $attachment_id );
 		}
 
 		return $new_meta;

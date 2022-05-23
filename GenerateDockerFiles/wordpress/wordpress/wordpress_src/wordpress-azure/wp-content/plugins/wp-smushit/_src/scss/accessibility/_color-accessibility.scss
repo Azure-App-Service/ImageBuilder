@@ -44,6 +44,11 @@
         .smush-submit-note {
             color: $accessible-dark;
         }
+
+        // Hightlight lazyload spinner.
+        .sui-lazyload .sui-box-selector [name="animation[spinner-icon]"]:checked+span {
+            background-color: rgba(220,220,222, 0.7)!important;
+        }
     }
 }
 

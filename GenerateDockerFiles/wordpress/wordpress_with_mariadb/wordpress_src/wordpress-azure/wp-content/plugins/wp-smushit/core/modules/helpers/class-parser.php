@@ -226,12 +226,12 @@ class Parser {
 	 * @since 3.3.0
 	 */
 	private function is_smartcrawl_analysis() {
-		$wds_analysis = filter_input( INPUT_POST, 'action', FILTER_SANITIZE_STRING );
+		$wds_analysis = filter_input( INPUT_POST, 'action', FILTER_SANITIZE_SPECIAL_CHARS );
 		if ( ! is_null( $wds_analysis ) && 'wds-analysis-recheck' === $wds_analysis ) {
 			return true;
 		}
 
-		if ( null !== filter_input( INPUT_GET, 'wds-frontend-check', FILTER_SANITIZE_STRING ) ) {
+		if ( null !== filter_input( INPUT_GET, 'wds-frontend-check', FILTER_SANITIZE_SPECIAL_CHARS ) ) {
 			return true;
 		}
 

@@ -1,0 +1,161 @@
+pr:
+  paths:
+    include: 
+      - "../../src/python/*"
+      - "../../src/common/*"
+
+variables:
+  - name: baseImageVersion
+    value: "20220502.2"
+    
+  - name: stackName
+    value: python
+
+parameters:
+  - name: Python_27
+    displayName: Python 2.7
+    type: boolean
+    default: true
+
+  - name: Python_36
+    displayName: Python 3.6
+    type: boolean
+    default: true
+
+  - name: Python_37
+    displayName: Python 3.7
+    type: boolean
+    default: true
+
+  - name: Python_38
+    displayName: Python 3.8
+    type: boolean
+    default: true
+
+  - name: Python_39
+    displayName: Python 3.9
+    type: boolean
+    default: true
+
+  - name: Python_310
+    displayName: Python 3.10
+    type: boolean
+    default: true
+
+resources:
+- repo: self
+  fetchDepth: 15
+
+jobs:
+- job: Job_CleanUp
+  displayName: Clean Machine
+  pool:
+    vmImage: ubuntu-18.04
+  timeoutInMinutes: 150
+  steps:
+  - template: ../cleanup_job.yaml
+
+- ${{ if eq(parameters.Python_27, true) }}:
+  - job: Job_Build_Python_27_Image
+    displayName: Build Python 2.7 Image
+    dependsOn: Job_CleanUp
+    pool:
+      vmImage: ubuntu-18.04
+    timeoutInMinutes: 100
+    steps:
+      - template: build_runtime_image_job.yaml
+        parameters:
+          baseImageVersion : ${{ variables.baseImageVersion }}
+          stackName : ${{ variables.stackName }}
+          stackVersion : 2.7
+
+- ${{ if eq(parameters.Python_36, true) }}:
+  - job: Job_Build_Python_36_Image
+    displayName: Build Python 3.6 Image
+    dependsOn: Job_CleanUp
+    pool:
+      vmImage: ubuntu-18.04
+    timeoutInMinutes: 100
+    steps:
+      - template: build_runtime_image_job.yaml
+        parameters:
+          baseImageVersion : ${{ variables.baseImageVersion }}
+          stackName : ${{ variables.stackName }}
+          stackVersion : 3.6
+
+- ${{ if eq(parameters.Python_37, true) }}:
+  - job: Job_Build_Python_37_Image
+    displayName: Build Python 3.7 Image
+    dependsOn: Job_CleanUp
+    pool:
+      vmImage: ubuntu-18.04
+    timeoutInMinutes: 100
+    steps:
+      - template: build_runtime_image_job.yaml
+        parameters:
+          baseImageVersion : ${{ variables.baseImageVersion }}
+          stackName : ${{ variables.stackName }}
+          stackVersion : 3.7
+
+- ${{ if eq(parameters.Python_38, true) }}:
+  - job: Job_Build_Python_38_Image
+    displayName: Build Python 3.8 Image
+    dependsOn: Job_CleanUp
+    pool:
+      vmImage: ubuntu-18.04
+    timeoutInMinutes: 100
+    steps:
+      - template: build_runtime_image_job.yaml
+        parameters:
+          baseImageVersion : ${{ variables.baseImageVersion }}
+          stackName : ${{ variables.stackName }}
+          stackVersion : 3.8
+
+- ${{ if eq(parameters.Python_39, true) }}:
+  - job: Job_Build_Python_39_Image
+    displayName: Build Python 3.9 Image
+    dependsOn: Job_CleanUp
+    pool:
+      vmImage: ubuntu-18.04
+    timeoutInMinutes: 100
+    steps:
+      - template: build_runtime_image_job.yaml
+        parameters:
+          baseImageVersion : ${{ variables.baseImageVersion }}
+          stackName : ${{ variables.stackName }}
+          stackVersion : 3.9
+
+- ${{ if eq(parameters.Python_310, true) }}:
+  - job: Job_Build_Python_310_Image
+    displayName: Build Python 3.10 Image
+    dependsOn: Job_CleanUp
+    pool:
+      vmImage: ubuntu-18.04
+    timeoutInMinutes: 100
+    steps:
+      - template: build_runtime_image_job.yaml
+        parameters:
+          baseImageVersion : ${{ variables.baseImageVersion }}
+          stackName : ${{ variables.stackName }}
+          stackVersion : 3.10
+
+- job: Job_Push_Python_Images_To_MCR
+    displayName: Push images to MCR
+    dependsOn: 
+      Job_Build_Python_27_Image
+      Job_Build_Python_36_Image
+      Job_Build_Python_37_Image
+      Job_Build_Python_38_Image
+      Job_Build_Python_39_Image
+      Job_Build_Python_310_Image
+    pool:
+      vmImage: ubuntu-18.04
+    timeoutInMinutes: 15
+    steps:
+      - task: ShellScript@2
+        displayName: 'Publish python images to MCR'
+        inputs:
+          scriptPath: $(System.DefaultWorkingDirectory)/v2/src/push_images_to_mcr.sh
+          args: "$(Build.ArtifactStagingDirectory)" "${{ parameters.stackName }}" $(Build.BuildNumber)
+
+trigger: none

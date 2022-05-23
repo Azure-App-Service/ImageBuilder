@@ -23,6 +23,20 @@ if ( ! defined( 'WPINC' ) ) {
 class WebP extends Abstract_Module {
 
 	/**
+	 * Module slug.
+	 *
+	 * @var string
+	 */
+	protected $slug = 'webp_mod';
+
+	/**
+	 * Whether module is pro or not.
+	 *
+	 * @var string
+	 */
+	protected $is_pro = true;
+
+	/**
 	 * If server is configured for webp
 	 *
 	 * @access private
@@ -36,6 +50,12 @@ class WebP extends Abstract_Module {
 	public function init() {
 		// Show success message after deleting all webp images.
 		add_action( 'wp_smush_header_notices', array( $this, 'maybe_show_notices' ) );
+
+		// Only apply filters for PRO + activated Webp.
+		if ( $this->is_active() ) {
+			// Add a filter to check if the image should resmush.
+			add_filter( 'wp_smush_should_resmush', array( $this, 'should_resmush' ), 10, 2 );
+		}
 	}
 
 	/**
@@ -46,7 +66,7 @@ class WebP extends Abstract_Module {
 	 * @param boolean $enable Whether to enable or disable WebP.
 	 */
 	public function toggle_webp( $enable = true ) {
-		$this->settings->set( 'webp_mod', $enable );
+		$this->settings->set( $this->slug, $enable );
 
 		global $wp_filesystem;
 		if ( is_null( $wp_filesystem ) ) {
@@ -179,16 +199,25 @@ class WebP extends Abstract_Module {
 		$directory  = trailingslashit( basename( $udir['upload_rel_path'] ) );
 		$regex_base = $base . '(' . $directory . ')';
 
-		$code = 'location ~* "' . str_replace( '/', '\/', $regex_base ) . '(.*.(?:png|jpe?g))" {
-  add_header Vary Accept;
-  set $image_path $2;
-  if (-f "' . $udir['webp_path'] . '/disable_smush_webp") {
-    break;
-  }
-  if ($http_accept !~* "webp") {
-    break;
-  }
-  try_files /' . trailingslashit( $udir['webp_rel_path'] ) . '$image_path.webp $uri =404;
+		/**
+		 * We often need to remove WebP file extension from Nginx cache rule in order to make Smush WebP work,
+		 * so always add expiry header rule for Nginx.
+		 *
+		 * @since 3.9.8
+		 * @see https://incsub.atlassian.net/browse/SMUSH-1072
+		 */
+
+		$code = 'location ~* "' . str_replace( '/', '\/', $regex_base ) . '(.*\.(?:png|jpe?g))" {
+	add_header Vary Accept;
+	set $image_path $2;
+	if (-f "' . $udir['webp_path'] . '/disable_smush_webp") {
+		break;
+	}
+	if ($http_accept !~* "webp") {
+		break;
+	}
+	expires	max;
+	try_files /' . trailingslashit( $udir['webp_rel_path'] ) . '$image_path.webp $uri =404;
 }';
 
 		if ( true === $marker ) {
@@ -222,7 +251,7 @@ class WebP extends Abstract_Module {
 		if ( 'root' === $location ) {
 			// This works on single sites at root.
 			$code .= ' RewriteCond ' . $rewrite_path . '/$1.webp -f
- RewriteRule ' . $udir['upload_rel_path'] . '/(.*.(?:png|jpe?g))$ ' . $udir['webp_rel_path'] . '/$1.webp [NC,T=image/webp]';
+ RewriteRule ' . $udir['upload_rel_path'] . '/(.*\.(?:png|jpe?g))$ ' . $udir['webp_rel_path'] . '/$1.webp [NC,T=image/webp]';
 		} else {
 			// This works at /uploads/.
 			$code .= ' RewriteCond ' . $rewrite_path . '/$1.$2.webp -f
@@ -317,13 +346,21 @@ class WebP extends Abstract_Module {
 		// For example, wp-content/smush-webp for wp-content/uploads.
 		$webp_root_rel_path = dirname( $upload_root_rel_path ) . '/smush-webp';
 
-		return array(
-			'upload_path'     => $upload['basedir'],
-			'upload_rel_path' => $upload_root_rel_path,
-			'upload_url'      => $upload['baseurl'],
-			'webp_path'       => dirname( $upload['basedir'] ) . '/smush-webp',
-			'webp_rel_path'   => $webp_root_rel_path,
-			'webp_url'        => dirname( $upload['baseurl'] ) . '/smush-webp',
+		/**
+		 * Add a hook for user custom webp address.
+		 *
+		 * @since 3.9.8
+		 */
+		return apply_filters(
+			'wp_smush_webp_dir',
+			array(
+				'upload_path'     => $upload['basedir'],
+				'upload_rel_path' => $upload_root_rel_path,
+				'upload_url'      => $upload['baseurl'],
+				'webp_path'       => dirname( $upload['basedir'] ) . '/smush-webp',
+				'webp_rel_path'   => $webp_root_rel_path,
+				'webp_url'        => dirname( $upload['baseurl'] ) . '/smush-webp',
+			)
 		);
 	}
 
@@ -342,20 +379,20 @@ class WebP extends Abstract_Module {
 			! file_exists( $test_png_file ) &&
 			! copy( WP_SMUSH_DIR . 'app/assets/images/smush-webp-test.png', $test_png_file )
 		) {
+			Helper::logger()->webp()->error( 'Cannot create test PNG file [%s].', $test_png_file );
 			return $udir['upload_path'];
 		}
 
 		// Create the WebP file that should be sent in the response if the rules work.
 		if ( ! file_exists( $test_webp_file ) ) {
-			if ( ! is_dir( $udir['webp_path'] ) ) {
-				$directory_created = wp_mkdir_p( $udir['webp_path'] );
-			}
+			$directory_created = is_dir( $udir['webp_path'] ) || wp_mkdir_p( $udir['webp_path'] );
 
 			// Bail out if it fails.
 			if (
 				! $directory_created ||
 				! copy( WP_SMUSH_DIR . 'app/assets/images/smush-webp-test.png.webp', $test_webp_file )
 			) {
+				Helper::logger()->webp()->error( 'Cannot create test Webp file [%s].', $test_webp_file );
 				return $udir['webp_path'];
 			}
 		}
@@ -424,7 +461,7 @@ class WebP extends Abstract_Module {
 	 */
 	public function should_be_converted( $id ) {
 		// Avoid conversion when webp disabled, or when Smush is Free.
-		if ( ! $this->settings->get( 'webp_mod' ) || ! WP_Smush::is_pro() ) {
+		if ( ! $this->is_active() || ! Helper::is_smushable( $id ) ) {
 			return false;
 		}
 
@@ -433,10 +470,30 @@ class WebP extends Abstract_Module {
 
 		// The image was already converted to WebP.
 		if ( ! empty( $meta['webp_flag'] ) && file_exists( $webp_udir['webp_path'] . '/' . $meta['webp_flag'] ) ) {
+			Helper::logger()->webp()->info( sprintf( 'The image [%d] is already converted to Webp: [%s]', $id, $meta['webp_flag'] ) );
 			return false;
 		}
 
 		return $this->can_be_converted( $id );
+	}
+
+	/**
+	 * Check whether to resmush image or not.
+	 *
+	 * @since 3.9.6
+	 *
+	 * @usedby Smush\App\Ajax::scan_images()
+	 *
+	 * @param bool $should_resmush Current status.
+	 * @param int  $attachment_id  Attachment ID.
+	 * @return bool webp|TRUE|FALSE.
+	 */
+	public function should_resmush( $should_resmush, $attachment_id ) {
+		if ( ! $should_resmush && $this->should_be_converted( $attachment_id ) ) {
+			$should_resmush = 'webp';
+		}
+
+		return $should_resmush;
 	}
 
 	/**
@@ -447,54 +504,103 @@ class WebP extends Abstract_Module {
 	 * @param int   $attachment_id  Attachment ID.
 	 * @param array $meta           Attachment meta.
 	 *
-	 * @return array
+	 * @return WP_Error|array
 	 */
 	public function convert_to_webp( $attachment_id, $meta ) {
 		$webp_files = array();
 
-		if ( ! wp_attachment_is_image( $attachment_id ) ) {
-			return $webp_files;
-		}
-
 		if ( ! $this->should_be_converted( $attachment_id ) ) {
 			return $webp_files;
 		}
+		// Maybe add scaled image file to the meta sizes.
+		$meta = apply_filters( 'wp_smush_add_scaled_images_to_meta', $meta, $attachment_id );
 
 		// File path and URL for original image.
-		$attachment_file_path = Helper::get_attached_file( $attachment_id );
+		$file_path = Helper::get_attached_file( $attachment_id );// S3+.
+		$smush     = WP_Smush::get_instance()->core()->mod->smush;
+
+		// initial an error.
+		$errors = null;
 
 		// If images has other registered size, smush them first.
 		if ( ! empty( $meta['sizes'] ) && ! has_filter( 'wp_image_editors', 'photon_subsizes_override_image_editors' ) ) {
+			/**
+			 * Add the full image as a converted image to avoid doing it duplicate.
+			 * E.g. Exclude the scaled file when disable compress the original image.
+			 */
+			$converted_thumbs = array(
+				basename( $file_path ) => 1,
+			);
 			foreach ( $meta['sizes'] as $size_data ) {
+				// Some thumbnail sizes are using the same image path, so check if the thumbnail file is converted.
+				if ( isset( $converted_thumbs[ $size_data['file'] ] ) ) {
+					continue;
+				}
 				// We take the original image. The 'sizes' will all match the same URL and
 				// path. So just get the dirname and replace the filename.
-				$attachment_file_path_size = path_join( dirname( $attachment_file_path ), $size_data['file'] );
+				$file_path_size = path_join( dirname( $file_path ), $size_data['file'] );
 
-				// Allows S3 to hook over here and check if the given file path exists else download the file.
-				do_action( 'smush_file_exists', $attachment_file_path_size, $attachment_id, $size_data );
-
-				$ext = Helper::get_mime_type( $attachment_file_path_size );
+				$ext = Helper::get_mime_type( $file_path_size );
 				if ( $ext && false === array_search( $ext, Core::$mime_types, true ) ) {
 					continue;
 				}
 
-				$response = WP_Smush::get_instance()->core()->mod->smush->do_smushit( $attachment_file_path_size, true );
+				/**
+				 * Check if the file exists on the server,
+				 * if not, might try to download it from the cloud (s3).
+				 *
+				 * @since 3.9.6
+				 */
+				if ( ! Helper::exists_or_downloaded( $file_path_size, $attachment_id ) ) {
+					continue;
+				}
+
+				$response = $smush->do_smushit( $file_path_size, true );
 
 				if ( is_wp_error( $response ) || ! $response ) {
-					$webp_has_error = true;
+					// Logged the error inside do_smushit.
+					if ( ! $errors ) {
+						$errors = new WP_Error();
+					}
+					if ( ! $response ) {
+						// Handle empty response.
+						if ( $errors->get_error_data( 'empty_response' ) ) {
+							$errors->add(
+								'empty_response',
+								__( 'Webp no response was received.', 'wp-smushit' ),
+								array(
+									'filename' => Helper::clean_file_path( $file_path_size ),
+								)
+							);
+						} else {
+							$errors->add_data(
+								array(
+									'filename' => Helper::clean_file_path( $file_path_size ),
+								),
+								'empty_response'
+							);
+						}
+					} else {
+						// Handle WP_Error.
+						$errors->merge_from( $response );
+					}
 				} else {
-					$webp_files[] = $this->get_webp_file_path( $attachment_file_path_size );
+					$webp_files[] = $this->get_webp_file_path( $file_path_size );
+					// Cache converted thumbnail file.
+					$converted_thumbs[ $size_data['file'] ] = 1;
 				}
 			}
 		}
 
-		if ( isset( $webp_has_error ) ) {
-			return $webp_files;
+		// Return errors.
+		if ( $errors ) {
+			return $errors;
 		}
 
-		$response = WP_Smush::get_instance()->core()->mod->smush->do_smushit( $attachment_file_path, true );
+		$response = $smush->do_smushit( $file_path, true );
+		// Logged the error inside do_smushit.
 		if ( ! is_wp_error( $response ) ) {
-			$webp_files[] = $this->get_webp_file_path( $attachment_file_path );
+			$webp_files[] = $this->get_webp_file_path( $file_path );
 
 			// If all images have been converted, set a flag in meta.
 			$stats = get_post_meta( $attachment_id, Smush::$smushed_meta_key, true );
@@ -601,7 +707,7 @@ class WebP extends Abstract_Module {
 			return;
 		}
 
-		$show_message = filter_input( INPUT_GET, 'notice', FILTER_SANITIZE_STRING );
+		$show_message = filter_input( INPUT_GET, 'notice', FILTER_SANITIZE_SPECIAL_CHARS );
 		// Success notice after deleting all WebP images.
 		if ( 'webp-deleted' === $show_message ) {
 			$message = __( 'WebP files were deleted successfully.', 'wp-smushit' );
@@ -774,6 +880,9 @@ class WebP extends Abstract_Module {
 			}
 
 			// TODO: if $is_configured is a wp error, display the message.
+			if ( $is_configured && is_wp_error( $is_configured ) ) {
+				Helper::logger()->webp()->error( sprintf( 'Server config error: %s.', $is_configured->get_error_message() ) );
+			}
 
 			$this->unsave_htaccess( $location );
 		}

@@ -13,6 +13,7 @@
 namespace Smush\Core\Modules\Async;
 
 use Exception;
+use Smush\Core\Helper;
 
 if ( ! defined( 'WPINC' ) ) {
 	die;
@@ -111,14 +112,7 @@ abstract class Abstract_Async {
 		try {
 			$data = $this->prepare_data( $data );
 		} catch ( Exception $e ) {
-			error_log(
-				sprintf(
-					'Async Smush: Error in prepare_data function in %s at line %s: %s',
-					__FILE__,
-					__LINE__,
-					$e->getMessage()
-				)
-			);
+			Helper::logger()->error( sprintf( 'Async Smush: Error in prepare_data: %s', $e->getMessage() ) );
 			return;
 		}
 

@@ -12,7 +12,6 @@ namespace Smush\App;
 
 use Smush\Core\Core;
 use Smush\Core\Helper;
-use Smush\Core\Integrations\S3\Compat;
 use Smush\Core\Modules\Abstract_Module;
 use Smush\Core\Modules\Smush;
 use WP_Post;
@@ -168,7 +167,7 @@ class Media_Library extends Abstract_Module {
 	 * @return mixed
 	 */
 	public function filter_media_query( $query ) {
-		$post_query = filter_input( INPUT_POST, 'query', FILTER_SANITIZE_STRING, FILTER_REQUIRE_ARRAY );
+		$post_query = filter_input( INPUT_POST, 'query', FILTER_SANITIZE_SPECIAL_CHARS, FILTER_REQUIRE_ARRAY );
 
 		// Excluded.
 		if ( isset( $post_query['stats'] ) && 'excluded' === $post_query['stats'] ) {
@@ -229,7 +228,7 @@ class Media_Library extends Abstract_Module {
 			return;
 		}
 
-		$ignored = filter_input( INPUT_GET, 'smush-filter', FILTER_SANITIZE_STRING );
+		$ignored = filter_input( INPUT_GET, 'smush-filter', FILTER_SANITIZE_SPECIAL_CHARS );
 
 		?>
 		<label for="smush_filter" class="screen-reader-text">
@@ -348,10 +347,10 @@ class Media_Library extends Abstract_Module {
 	 * @return string
 	 */
 	private function smush_status( $id ) {
-		$action = filter_input( INPUT_POST, 'action', FILTER_SANITIZE_STRING, FILTER_NULL_ON_FAILURE );
+		$action = filter_input( INPUT_POST, 'action', FILTER_SANITIZE_SPECIAL_CHARS, FILTER_NULL_ON_FAILURE );
 
 		// Show Temporary Status, For Async Optimisation, No Good workaround.
-		if ( ! get_option( "wp-smush-restore-{$id}", false ) && 'upload-attachment' === $action && $this->settings->get( 'auto' ) ) {
+		if ( ! Helper::file_in_progress( $id, 'restore' ) && 'upload-attachment' === $action && $this->settings->get( 'auto' ) ) {
 			$status_txt = '<p class="smush-status">' . __( 'Smushing in progress...', 'wp-smushit' ) . '</p>';
 
 			// We need to show the smush button.
@@ -405,15 +404,9 @@ class Media_Library extends Abstract_Module {
 	 * @return string|array  HTML content or array of results.
 	 */
 	public function generate_markup( $id ) {
-		// Don't proceed if attachment is not image, or if image is not a jpg, png or gif.
-		if ( ! wp_attachment_is_image( $id ) || ! in_array( get_post_mime_type( $id ), Core::$mime_types, true ) ) {
-			return __( 'Not processed', 'wp-smushit' );
-		}
-
-		// Remove Smush s3 hook, as it downloads the file again.
-		if ( class_exists( '\Compat' ) && class_exists( '\AS3CF_Plugin_Compatibility' ) ) {
-			$s3_compat = new Compat();
-			remove_filter( 'as3cf_get_attached_file', array( $s3_compat, 'smush_download_file' ), 11, 4 );
+		// Don't proceed if attachment is not image, or if image is not a jpg, png or gif, or if is not found.
+		if ( ! ( $is_smushable = Helper::is_smushable( $id ) ) ) {// phpcs:ignore
+			return false === $is_smushable ? __( 'Image not found!', 'wp-smushit' ) : __( 'Not processed', 'wp-smushit' );
 		}
 
 		$smush_data      = get_post_meta( $id, Smush::$smushed_meta_key, true );
@@ -452,11 +445,11 @@ class Media_Library extends Abstract_Module {
 	 * @return string
 	 */
 	private function get_optimization_status( $id, $smush_data ) {
-		if ( get_option( 'smush-in-progress-' . $id, false ) ) {
+		if ( Helper::file_in_progress( $id, 'smush' ) ) {
 			return __( 'Smushing in progress...', 'wp-smushit' );
 		}
 
-		if ( 'true' === get_post_meta( $id, 'wp-smush-ignore-bulk', true ) ) {
+		if ( Helper::is_ignored( $id ) ) {
 			return __( 'Ignored from auto-smush', 'wp-smushit' );
 		}
 
@@ -504,12 +497,12 @@ class Media_Library extends Abstract_Module {
 	 * @return string
 	 */
 	public function get_optimization_links( $id, $smush_data = array(), $attachment_data = array() ) {
-		if ( get_option( 'smush-in-progress-' . $id, false ) ) {
+		if ( Helper::file_in_progress( $id, 'smush' ) ) {
 			return '';
 		}
 
 		// Skipped.
-		if ( 'true' === get_post_meta( $id, 'wp-smush-ignore-bulk', true ) ) {
+		if ( Helper::is_ignored( $id ) ) {
 			$nonce = wp_create_nonce( 'wp-smush-remove-skipped' );
 			return "<a href='#' class='wp-smush-remove-skipped' data-id='{$id}' data-nonce='{$nonce}'>" . __( 'Undo', 'wp-smushit' ) . '</a>';
 		}
@@ -571,11 +564,6 @@ class Media_Library extends Abstract_Module {
 			}
 		}
 
-		// If image needs to be resized.
-		if ( $this->core->mod->resize->should_resize( $id, $attachment_data ) ) {
-			return true;
-		}
-
 		// EXIF Check.
 		if ( $this->settings->get( 'strip_exif' ) ) {
 			// If Keep Exif was set to true initially, and since it is set to false now.
@@ -584,13 +572,20 @@ class Media_Library extends Abstract_Module {
 			}
 		}
 
-		// PNG to JPEG.
-		if ( WP_Smush::is_pro() && $this->core->mod->png2jpg->can_be_converted( $id ) ) {
-			return true;
-		}
-
-		// If the image needs to be converted to WebP.
-		if ( $this->core->mod->webp->should_be_converted( $id ) ) {
+		/**
+		 * If the image needs to be resmushed add it to the list.
+		 *
+		 * @since 3.9.6 Add a filter to allow user handle resmush.
+		 *
+		 * @param bool  $should_resmush Whether the image should resmush.
+		 * @param int   $id             Attachment ID.
+		 * @param array $wp_smush_data     Smushed data.
+		 *
+		 * @hooked Smush\Core\Modules\Png2jpg::should_resmush() 9
+		 * @hooked Smush\Core\Modules\Resize::should_resmush()  10
+		 * @hooked Smush\Core\Modules\WebP::should_resmush()    10
+		 */
+		if ( apply_filters( 'wp_smush_should_resmush', false, $id, $wp_smush_data ) ) {
 			return true;
 		}
 
@@ -639,49 +634,7 @@ class Media_Library extends Abstract_Module {
 			return false;
 		}
 
-		// Get the image path for all sizes.
-		$file = get_attached_file( $image_id );
-
-		// Get stored backup path, if any.
-		$backup_sizes = get_post_meta( $image_id, '_wp_attachment_backup_sizes', true );
-
-		// Check if we've a backup path.
-		if ( ! empty( $backup_sizes ) && ( ! empty( $backup_sizes['smush-full'] ) || ! empty( $backup_sizes['smush_png_path'] ) ) ) {
-			// Check for PNG backup.
-			$backup = ! empty( $backup_sizes['smush_png_path'] ) ? $backup_sizes['smush_png_path'] : '';
-
-			// Check for original full size image backup.
-			$backup = empty( $backup ) && ! empty( $backup_sizes['smush-full'] ) ? $backup_sizes['smush-full'] : $backup;
-			$backup = ! empty( $backup['file'] ) ? $backup['file'] : '';
-		}
-
-		// If we still don't have a backup path, use traditional method to get it.
-		if ( empty( $backup ) ) {
-			// Check backup for Full size.
-			$backup = $this->core->mod->backup->get_image_backup_path( $file );
-		} else {
-			// Get the full path for file backup.
-			$backup = str_replace( wp_basename( $file ), wp_basename( $backup ), $file );
-		}
-
-		if ( apply_filters( 'smush_backup_exists', ! empty( $backup_sizes ), $image_id, $backup ) ) {
-			return true;
-		}
-
-		// Additional Backup Check for JPEGs converted from PNG.
-		$pngjpg_savings = get_post_meta( $image_id, 'wp-smush-pngjpg_savings', true );
-		if ( ! empty( $pngjpg_savings ) ) {
-
-			// Get the original File path and check if it exists.
-			$backup = get_post_meta( $image_id, 'wp-smush-original_file', true );
-			$backup = Helper::original_file( $backup );
-
-			if ( ! empty( $backup ) && is_file( $backup ) ) {
-				return true;
-			}
-		}
-
-		return false;
+		return $this->core->mod->backup->backup_exists( $image_id );
 	}
 
 	/**
@@ -695,9 +648,9 @@ class Media_Library extends Abstract_Module {
 	 * @return string
 	 */
 	private function column_html( $id, $html = '', $button_txt = '', $show_button = true ) {
-		// Don't proceed if attachment is not image, or if image is not a jpg, png or gif.
-		if ( ! wp_attachment_is_image( $id ) || ! in_array( get_post_mime_type( $id ), Core::$mime_types, true ) ) {
-			return __( 'Not processed', 'wp-smushit' );
+		// Don't proceed if attachment is not image, or if image is not a jpg, png or gif, or if is not found.
+		if ( ! ( $is_smushable = Helper::is_smushable( $id ) ) ) {// phpcs:ignore
+			return false === $is_smushable ? __( 'Image not found!', 'wp-smushit' ) : __( 'Not processed', 'wp-smushit' );
 		}
 
 		// If we aren't showing the button.
@@ -711,8 +664,7 @@ class Media_Library extends Abstract_Module {
 
 		$html .= "<a href='#' class='wp-smush-send' data-id='{$id}'>{$button_txt}</a>";
 
-		$skipped = get_post_meta( $id, 'wp-smush-ignore-bulk', true );
-		if ( 'true' === $skipped ) {
+		if ( Helper::is_ignored( $id ) ) {
 			$nonce = wp_create_nonce( 'wp-smush-remove-skipped' );
 			$html .= " | <a href='#' class='wp-smush-remove-skipped' data-id={$id} data-nonce={$nonce}>" . __( 'Show in bulk Smush', 'wp-smushit' ) . '</a>';
 		} else {

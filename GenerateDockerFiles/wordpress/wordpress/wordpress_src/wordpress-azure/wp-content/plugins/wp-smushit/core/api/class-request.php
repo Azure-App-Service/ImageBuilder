@@ -12,6 +12,7 @@ namespace Smush\Core\Api;
 
 use Exception;
 use WP_Error;
+use Smush\Core\Helper;
 
 if ( ! defined( 'WPINC' ) ) {
 	die;
@@ -354,6 +355,11 @@ class Request {
 		}
 
 		update_site_option( 'wp-smush-last_run_sync', $last_run );
+
+		// Log error.
+		if ( is_wp_error( $response ) ) {
+			Helper::logger()->api()->error( sprintf( 'Error [%s->%s]: %s', $method, $path, $response->get_error_message() ) );
+		}
 
 		return $response;
 	}

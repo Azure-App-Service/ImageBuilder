@@ -46,9 +46,6 @@ class Gutenberg extends Abstract_Integration {
 			return;
 		}
 
-		// Show submit button when Gutenberg is active.
-		add_filter( 'wp_smush_integration_show_submit', '__return_true' );
-
 		// Register gutenberg block assets.
 		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_gb' ) );
 	}

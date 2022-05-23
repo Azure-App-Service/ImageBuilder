@@ -455,6 +455,29 @@ class Stats {
 	}
 
 	/**
+	 * Temporary remove Smush metadata.
+	 *
+	 * We use this in order to temporary remove the stats metadata,
+	 * e.g While generating thumbnail or wp_generate_ when disabled auto smush.
+	 *
+	 * Note, if member's site allows compression of the original file,
+	 * when we remove stats, we might lose a large amount of storage (stats) that we saved for the member's site.
+	 * => TODO: Delete stats or just update new stats with re-smush?
+	 *
+	 * @since 3.9.6
+	 *
+	 * @param int $attachment_id    Attachment ID.
+	 */
+	public function remove_stats( $attachment_id ) {
+		// Main stats.
+		delete_post_meta( $attachment_id, Modules\Smush::$smushed_meta_key );
+		// Lossy flag.
+		delete_post_meta( $attachment_id, 'wp-smush-lossy' );
+		// Finally, remove the attachment ID from cache.
+		self::remove_from_smushed_list( $attachment_id );
+	}
+
+	/**
 	 * Get attachments that are not optimized.
 	 *
 	 * @return array
@@ -582,8 +605,10 @@ class Stats {
 			}
 
 			$stats['count_images'] = 0;
-			foreach ( ( is_array( $smush_stats['sizes'] ) ? $smush_stats['sizes'] : array() ) as $image_stats ) {
-				$stats['count_images'] += $image_stats->size_before !== $image_stats->size_after ? 1 : 0;
+			if ( isset( $smush_stats['sizes'] ) && is_array( $smush_stats['sizes'] ) ) {
+				foreach ( $smush_stats['sizes'] as $image_stats ) {
+					$stats['count_images'] += $image_stats->size_before !== $image_stats->size_after ? 1 : 0;
+				}
 			}
 
 			$stats['count_supersmushed'] += ! empty( $smush_stats['stats'] ) && $smush_stats['stats']['lossy'] ? 1 : 0;

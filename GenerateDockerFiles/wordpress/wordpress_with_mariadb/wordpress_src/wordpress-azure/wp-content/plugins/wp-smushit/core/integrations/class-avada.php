@@ -10,7 +10,6 @@ namespace Smush\Core\Integrations;
 
 use Smush\Core\Modules\CDN;
 use Smush\Core\Modules\Helpers\Parser;
-use Smush\Core\Settings;
 
 if ( ! defined( 'WPINC' ) ) {
 	die;
@@ -36,9 +35,7 @@ class Avada {
 	 * @param CDN $cdn  CDN module.
 	 */
 	public function __construct( CDN $cdn ) {
-		$settings = Settings::get_instance();
-
-		if ( $settings->get( 'cdn' ) ) {
+		if ( $cdn->is_active() ) {
 			$this->cdn = $cdn;
 			add_filter( 'smush_cdn_bg_image_tag', array( $this, 'replace_cdn_links' ) );
 		}

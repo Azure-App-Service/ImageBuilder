@@ -112,7 +112,7 @@ class Composer extends Abstract_Integration {
 	 */
 	public function process_image_resize( $image_src ) {
 		$vc_editable = filter_input( INPUT_GET, 'vc_editable', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE );
-		$vc_action   = filter_input( INPUT_POST, 'action', FILTER_SANITIZE_STRING );
+		$vc_action   = filter_input( INPUT_POST, 'action', FILTER_SANITIZE_SPECIAL_CHARS );
 
 		global $pagename, $vc_manager;
 

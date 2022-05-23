@@ -86,6 +86,7 @@ import Smush from '../smush/smush';
 				$.post( ajaxurl, {
 					action: 'ignore_bulk_image',
 					id: self.attr( 'data-id' ),
+					_ajax_nonce: wp_smush_msgs.nonce,
 				} ).done( ( response ) => {
 					if (
 						self.is( 'a' ) &&

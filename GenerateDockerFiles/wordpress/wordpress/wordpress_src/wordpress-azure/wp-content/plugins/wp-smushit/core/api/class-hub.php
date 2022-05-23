@@ -70,19 +70,18 @@ class Hub {
 	 */
 	public function action_get_stats( $params, $action ) {
 		$status   = array();
+		$core = \WP_Smush::get_instance()->core();
 		$settings = Settings::get_instance();
 
-		$status['cdn']   = $settings->get( 'cdn' );
+		$status['cdn']   = $core->mod->cdn->is_active();
 		$status['super'] = $settings->get( 'lossy' );
 
 		$lazy = $settings->get_setting( 'wp-smush-lazy_load' );
 
 		$status['lazy'] = array(
-			'enabled' => $settings->get( 'lazy_load' ),
+			'enabled' => $core->mod->lazy->is_active(),
 			'native'  => is_array( $lazy ) && isset( $lazy['native'] ) ? $lazy['native'] : false,
 		);
-
-		$core = \WP_Smush::get_instance()->core();
 
 		if ( ! isset( $core->stats ) ) {
 			// Setup stats, if not set already.

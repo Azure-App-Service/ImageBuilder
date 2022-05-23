@@ -74,6 +74,8 @@ class Modules {
 	 * Modules constructor.
 	 */
 	public function __construct() {
+		new Deprecated_Hooks();// Handle deprecated hooks.
+
 		new Api\Hub(); // Init hub endpoints.
 
 		new Modules\Resize_Detection();

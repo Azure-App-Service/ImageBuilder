@@ -84,12 +84,6 @@ class NextGen extends Abstract_Integration {
 		add_action( 'admin_init', array( $this, 'init_modules' ) );
 
 		/**
-		 * FILTERS
-		 */
-		// Show submit button when Gutenberg is active.
-		add_filter( 'wp_smush_integration_show_submit', '__return_true' );
-
-		/**
 		 * ACTIONS
 		 */
 		// Auto Smush image, if enabled, runs after NextGen is finished uploading the image.
@@ -170,6 +164,8 @@ class NextGen extends Abstract_Integration {
 	 */
 	public function smush_bulk() {
 		$stats = array();
+
+		check_ajax_referer( 'wp-smush-ajax', '_nonce' );
 
 		if ( empty( $_GET['attachment_id'] ) ) {
 			wp_send_json_error(

@@ -23,6 +23,20 @@ if ( ! defined( 'WPINC' ) ) {
 class CDN extends Abstract_Module {
 
 	/**
+	 * Module slug.
+	 *
+	 * @var string
+	 */
+	protected $slug = 'cdn';
+
+	/**
+	 * Whether module is pro or not.
+	 *
+	 * @var string
+	 */
+	protected $is_pro = true;
+
+	/**
 	 * Smush CDN base url.
 	 *
 	 * @var null|string
@@ -113,7 +127,7 @@ class CDN extends Abstract_Module {
 		/**
 		 * Main functionality.
 		 */
-		if ( ! $this->settings->get( 'cdn' ) || ! $this->cdn_active ) {
+		if ( ! $this->get_status() ) {
 			return;
 		}
 
@@ -165,7 +179,7 @@ class CDN extends Abstract_Module {
 	 * @since 3.0
 	 */
 	public function get_status() {
-		return $this->cdn_active && $this->settings->get( 'cdn' );
+		return $this->cdn_active && $this->is_active();
 	}
 
 	/**
@@ -176,7 +190,7 @@ class CDN extends Abstract_Module {
 	 * @since 3.2.1
 	 */
 	public function status() {
-		if ( ! $this->cdn_active || ! $this->settings->get( 'cdn' ) ) {
+		if ( ! $this->settings->get( 'cdn' ) ) {
 			return 'disabled';
 		}
 
@@ -314,7 +328,7 @@ class CDN extends Abstract_Module {
 		}
 
 		// CDN will not work if there is no dashboard plugin installed.
-		if ( ! file_exists( WP_PLUGIN_DIR . '/wpmudev-updates/update-notifications.php' ) && ! class_exists('WPMUDEV_Dashboard') ) {
+		if ( ! file_exists( WP_PLUGIN_DIR . '/wpmudev-updates/update-notifications.php' ) && ! class_exists( 'WPMUDEV_Dashboard' ) ) {
 			return;
 		}
 
@@ -416,9 +430,7 @@ class CDN extends Abstract_Module {
 		$url = $this->cdn_base . ltrim( $url_parts['path'], '/' );
 
 		// Now we need to add our CDN parameters for resizing.
-		$url = add_query_arg( $args, $url );
-
-		return $url;
+		return add_query_arg( $args, $url );
 	}
 
 	/**
@@ -430,7 +442,7 @@ class CDN extends Abstract_Module {
 	 * @return true|WP_error
 	 */
 	public function toggle_cdn( $enable ) {
-		$this->settings->set( 'cdn', $enable );
+		$this->settings->set( $this->slug, $enable );
 
 		if ( $enable ) {
 			$status = $this->settings->get_setting( 'wp-smush-cdn_status' );
@@ -710,9 +722,7 @@ class CDN extends Abstract_Module {
 		 * @param string $src    Image src.
 		 * @param string $image  Image tag.
 		 */
-		$src = apply_filters( 'smush_image_src_after_cdn', $src, $image );
-
-		return $src;
+		return apply_filters( 'smush_image_src_after_cdn', $src, $image );
 	}
 
 	/**
@@ -890,12 +900,12 @@ class CDN extends Abstract_Module {
 
 		// Too many requests.
 		if ( is_null( $status ) ) {
-			return new \WP_Error( 'too_many_requests', __( 'Too many requests, please try again in a moment.', 'wp-smushit' ) );
+			return new WP_Error( 'too_many_requests', __( 'Too many requests, please try again in a moment.', 'wp-smushit' ) );
 		}
 
 		// Some other error from API.
 		if ( ! $status->success ) {
-			return new \WP_Error( $status->data->error_code, $status->data->message );
+			return new WP_Error( $status->data->error_code, $status->data->message );
 		}
 
 		return $status->data;
@@ -1371,6 +1381,10 @@ class CDN extends Abstract_Module {
 
 		// Allow only these extensions in CDN.
 		$path = wp_parse_url( $src, PHP_URL_PATH );
+		// Make sure $path is not null, because passing null to parameter is deprecated in PHP 8.1.
+		if ( empty( $path ) ) {
+			return false;
+		}
 		$ext  = strtolower( pathinfo( $path, PATHINFO_EXTENSION ) );
 		if ( ! in_array( $ext, $this->supported_extensions, true ) ) {
 			return false;
@@ -1426,7 +1440,7 @@ class CDN extends Abstract_Module {
 		 */
 		$uploads = apply_filters( 'smush_cdn_custom_uploads_dir', wp_get_upload_dir() );
 		// Check if the src is within custom uploads directory.
-		$uploads = isset( $uploads['baseurl'] ) ? false !== strpos( $src, $uploads['baseurl'] ) : true;
+		$uploads = ! isset( $uploads['baseurl'] ) || false !== strpos( $src, $uploads['baseurl'] );
 
 		if ( ( false === strpos( $src, content_url() ) && ! $uploads ) || ( is_multisite() && $mapped_domain && false === strpos( $src, $mapped_domain ) ) ) {
 			return false;
@@ -1479,7 +1493,7 @@ class CDN extends Abstract_Module {
 			$this->parser->enable( 'background_images' );
 		}
 
-		$this->parser->enable( 'cdn' );
+		$this->parser->enable( $this->slug );
 	}
 
 	/**

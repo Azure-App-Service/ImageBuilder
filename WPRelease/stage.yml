@@ -1,0 +1,45 @@
+parameters:
+  stageNumber: 0
+  stageName: "Stage0"
+
+stages:
+- stage: ${{ parameters.stageName }} 
+  displayName: ${{ parameters.stageName }}
+  pool:
+    vmImage: ubuntu-18.04
+  jobs:
+
+  - job: Job_CleanUp
+    displayName: Clean Machine
+    pool:
+      vmImage: ubuntu-18.04
+    timeoutInMinutes: 150
+    steps:
+    - template: CleanUp/cleanImageCache.yml
+
+  - job: tagAndUpdateImages
+    displayName: Push WordPress Image to MCR
+    dependsOn: Job_CleanUp
+    pool:
+      vmImage: ubuntu-18.04
+    timeoutInMinutes: 100
+    steps:
+    - template: TagAndUpdateImages/tagAndUpdateImage.yml
+      parameters:
+        stackName: wordpress-alpine-php
+        stageNumber: ${{ parameters.stageNumber }}
+        
+  - job: waitForValidation
+    displayName: Wait for external validation
+    pool: server
+    timeoutInMinutes: 4320 # job times out in 3 days
+    dependsOn: tagAndUpdateImages
+    condition: and(succeeded(), ne(${{ parameters.stageNumber }}, 7))
+    steps:
+    - task: ManualValidation@0
+      timeoutInMinutes: 1440 # task times out in 1 day
+      inputs:
+        notifyUsers: |
+            wordpressdev@microsoft.com
+        instructions: 'Please validate the build configuration and resume'
+        onTimeout: 'reject'

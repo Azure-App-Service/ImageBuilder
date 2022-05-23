@@ -15,7 +15,6 @@ namespace Smush\Core\Modules;
 
 use Exception;
 use Imagick;
-use ImagickPixel;
 use Smush\Core\Helper;
 use WP_Smush;
 
@@ -29,18 +28,44 @@ if ( ! defined( 'WPINC' ) ) {
 class Png2jpg extends Abstract_Module {
 
 	/**
-	 * Does PNG contain transparency.
+	 * Module slug.
 	 *
-	 * @var bool
+	 * @var string
 	 */
-	private $is_transparent = false;
+	protected $slug = 'png_to_jpg';
+
+	/**
+	 * Whether module is pro or not.
+	 *
+	 * @var string
+	 */
+	protected $is_pro = true;
 
 	/**
 	 * Init method.
 	 *
 	 * @since 3.0
 	 */
-	public function init() {}
+	public function init() {
+
+		// Only apply filters for PRO + activated PNG2JPG.
+		if ( $this->is_active() ) {
+			/**
+			 * Add a filter to check if the image should resmush.
+			 * While checking resmush, we priority to check PNG2JPG before checking resize
+			 * to optimize for the case, the site is activating S3 and doesn't save files on the server:
+			 * 1. If there is a PNG file, we will need to download it so when we check with resize, we don't need to download it again.
+			 * 2. If there is not a PNG file, we don't need to download this file,
+			 * and on resize method we will try to download the file content from url if it's necessary.
+			 */
+			add_filter( 'wp_smush_should_resmush', array( $this, 'should_resmush' ), 9, 2 );
+
+			/**
+			 * Save can be convert to jpg status before resizing the image.
+			 */
+			add_filter( 'wp_smush_resize_sizes', array( $this, 'cache_can_be_converted_status' ), 0, 3 );
+		}
+	}
 
 	/**
 	 * Check if Imagick is available or not
@@ -69,6 +94,28 @@ class Png2jpg extends Abstract_Module {
 	}
 
 	/**
+	 * Save can be converted status before resizing the image,
+	 * because the the image might be lost the undefined-transparent behavior after resizing.
+	 *
+	 * @see WP_Image_Editor_Imagick::thumbnail_image()
+	 * WP Resize function will convert Imagick::ALPHACHANNEL_UNDEFINED -> Imagick::ALPHACHANNEL_OPAQUE.
+	 *
+	 * @param array  $sizes      Array of sizes containing max width and height for all the uploaded images.
+	 * @param string $file_path  Image file path.
+	 * @param int    $id         Image id.
+	 *
+	 * @return array the Original $sizes.
+	 *
+	 * @since 3.9.6
+	 */
+	public function cache_can_be_converted_status( $sizes, $file_path, $id ) {
+		// Call can_be_converted and cache the status.
+		$this->can_be_converted( $id, 'full', '', $file_path );
+		// Always return $sizes.
+		return $sizes;
+	}
+
+	/**
 	 * Checks if the Given PNG file is transparent or not
 	 *
 	 * @param string $id    Attachment ID.
@@ -89,6 +136,7 @@ class Png2jpg extends Abstract_Module {
 
 		// Check if File exists.
 		if ( empty( $file ) || ! file_exists( $file ) ) {
+			Helper::logger()->png2jpg()->info( sprintf( 'File [%s(%d)] is empty or does not exist.', Helper::clean_file_path( $file ), $id ) );
 			return false;
 		}
 
@@ -101,17 +149,19 @@ class Png2jpg extends Abstract_Module {
 
 				return $im->getImageAlphaChannel();
 			} catch ( Exception $e ) {
-				error_log( 'Imagick: Error in checking PNG transparency ' . $e->getMessage() );
+				Helper::logger()->png2jpg()->error( 'Imagick: Error in checking PNG transparency ' . $e->getMessage() );
 			}
 		} else {
 			// Simple check.
 			// Src: http://camendesign.com/code/uth1_is-png-32bit.
 			if ( ord( file_get_contents( $file, false, null, 25, 1 ) ) & 4 ) {
+				Helper::logger()->png2jpg()->info( sprintf( 'File [%s(%d)] is an PNG 32-bit.', Helper::clean_file_path( $file ), $id ) );
 				return true;
 			}
 			// Src: http://www.jonefox.com/blog/2011/04/15/how-to-detect-transparency-in-png-images/.
 			$contents = file_get_contents( $file );
 			if ( stripos( $contents, 'PLTE' ) !== false && stripos( $contents, 'tRNS' ) !== false ) {
+				Helper::logger()->png2jpg()->info( sprintf( 'File [%s(%d)] is an PNG 8-bit.', Helper::clean_file_path( $file ), $id ) );
 				return true;
 			}
 
@@ -135,36 +185,6 @@ class Png2jpg extends Abstract_Module {
 	}
 
 	/**
-	 * Check whether to convert the PNG to JPG or not
-	 *
-	 * @param string $id    Attachment ID.
-	 * @param string $file  File path for the attachment.
-	 *
-	 * @return bool Whether to convert the PNG or not
-	 */
-	private function should_convert( $id, $file = '' ) {
-		// Get the Transparency conversion settings.
-		$convert_png = $this->settings->get( 'png_to_jpg' );
-
-		if ( ! $convert_png ) {
-			return false;
-		}
-
-		$this->is_transparent = $this->is_transparent( $id, $file );
-
-		// The $file is provided when it'll be used later on (when smushing),
-		// and it's empty when only checking whether an image should be converted.
-		if ( empty( $file ) ) {
-			// The local file is downloaded by $this->is_transparent() and
-			// isn't used anymore when we're only checking whether to convert.
-			Helper::remove_main_file_from_server_when_in_s3( $id );
-		}
-
-		// Only convert non-transparent images.
-		return ! $this->is_transparent;
-	}
-
-	/**
 	 * Check if given attachment id can be converted to JPEG or not
 	 *
 	 * @param string $id    Atachment ID.
@@ -172,11 +192,22 @@ class Png2jpg extends Abstract_Module {
 	 * @param string $mime  Mime type.
 	 * @param string $file  File.
 	 *
+	 * @since 3.9.6 We removed the private method should_convert
+	 * and we also handled the case which we need to delete the download file inside S3.
+	 *
+	 * Note, we also used this for checking resmush, so we only download the attached file (s3)
+	 * if it's necessary (self::is_transparent()). Check the comment on self::__construct() for detail.
+	 *
 	 * @return bool True/False Can be converted or not
 	 */
 	public function can_be_converted( $id = '', $size = 'full', $mime = '', $file = '' ) {
-		if ( empty( $id ) ) {
+		// If PNG2JPG not enabled, or is not smushable, return.
+		if ( ! $this->is_active() || ! Helper::is_smushable( $id ) ) {
 			return false;
+		}
+		// Check it from the cache for full size.
+		if ( 'full' === $size && null !== Helper::cache_get( $id, 'png2jpg_can_be_converted' ) ) {
+			return Helper::cache_get( $id, 'png2jpg_can_be_converted' );
 		}
 
 		// False if not a PNG.
@@ -187,11 +218,13 @@ class Png2jpg extends Abstract_Module {
 
 		// Return if Imagick and GD is not available.
 		if ( ! $this->supports_imagick() && ! $this->supports_gd() ) {
+			Helper::logger()->png2jpg()->warning( 'The site does not support Imagick or GD.' );
 			return false;
 		}
 
 		// If already tried the conversion.
 		if ( get_post_meta( $id, 'wp-smush-pngjpg_savings', true ) ) {
+			Helper::logger()->png2jpg()->info( sprintf( 'File [%s(%d)] already tried the conversion.', Helper::clean_file_path( $file ), $id ) );
 			return false;
 		}
 
@@ -200,8 +233,10 @@ class Png2jpg extends Abstract_Module {
 			return false;
 		}
 
-		/** Whether to convert to jpg or not */
-		$should_convert = $this->should_convert( $id, $file );
+		// Make sure $file is not empty.
+		if ( empty( $file ) ) {
+			$file = Helper::get_attached_file( $id );// S3+.
+		}
 
 		/**
 		 * Filter whether to convert the PNG to JPG or not
@@ -216,9 +251,36 @@ class Png2jpg extends Abstract_Module {
 		 *
 		 * @param string $size Image size being converted
 		 */
-		$should_convert = apply_filters( 'wp_smush_convert_to_jpg', $should_convert, $id, $file, $size );
+		$should_convert = apply_filters( 'wp_smush_convert_to_jpg', ! $this->is_transparent( $id, $file ), $id, $file, $size );
+
+		if ( 'full' === $size ) {
+			/**
+			 * We used this method inside Backup::create_backup(), Smush function, and filter wp_smush_resize_sizes,
+			 * so cache the result to avoid to check it again.
+			 */
+			Helper::cache_set( $id, $should_convert, 'png2jpg_can_be_converted' );
+		}
 
 		return $should_convert;
+	}
+
+	/**
+	 * Check whether to resmush image or not.
+	 *
+	 * @since 3.9.6
+	 *
+	 * @usedby Smush\App\Ajax::scan_images()
+	 *
+	 * @param bool $should_resmush Current status.
+	 * @param int  $attachment_id  Attachment ID.
+	 * @return bool|string png2jpg|TRUE|FALSE
+	 */
+	public function should_resmush( $should_resmush, $attachment_id ) {
+		if ( ! $should_resmush && $this->can_be_converted( $attachment_id ) ) {
+			$should_resmush = 'png2jpg';
+		}
+
+		return $should_resmush;
 	}
 
 	/**
@@ -231,7 +293,7 @@ class Png2jpg extends Abstract_Module {
 	 * @param string $size_k  Image Size.
 	 * @param string $o_type  Operation Type "conversion", "restore".
 	 *
-	 * @return mixed  Attachment Meta with updated file path.
+	 * @return array  Attachment Meta with updated file path.
 	 */
 	public function update_image_path( $id, $o_file, $n_file, $meta, $size_k, $o_type = 'conversion' ) {
 		// Upload Directory.
@@ -268,33 +330,52 @@ class Png2jpg extends Abstract_Module {
 			$mime = 'conversion' === $o_type ? 'image/jpeg' : 'image/png';
 		}
 
+		$del_file = true;
 		// Update File Path, Attached file, Mime Type for Image.
 		if ( 'full' === $size_k ) {
 			if ( ! empty( $meta ) ) {
 				$new_file     = str_replace( $upload_path, '', $n_file_path );
 				$meta['file'] = $new_file;
+
+				// Update Attached File.
+				if ( ! update_attached_file( $id, $meta['file'] ) ) {
+					$del_file = false;
+				}
 			}
-			// Update Attached File.
-			update_attached_file( $id, $meta['file'] );
 
 			// Update Mime type.
-			wp_update_post(
+			if ( ! wp_update_post(
 				array(
 					'ID'             => $id,
 					'post_mime_type' => $mime,
 				)
-			);
+			) ) {
+				$del_file = false;
+			}
 		} else {
 			$meta['sizes'][ $size_k ]['file']      = basename( $n_file );
 			$meta['sizes'][ $size_k ]['mime-type'] = $mime;
 		}
 
 		// To be called after the attached file key is updated for the image.
-		$this->update_image_url( $id, $size_k, $n_file, $o_url );
+		if ( ! $this->update_image_url( $id, $size_k, $n_file, $o_url ) ) {
+			$del_file = false;
+		}
 
-		// Delete the Original files if backup not enabled.
-		if ( 'conversion' === $o_type && ! $this->settings->get( 'backup' ) ) {
-			@unlink( $o_file );
+		/**
+		 * Delete the Original files if backup not enabled
+		 * We only delete the file if we don't have any issues while updating the DB.
+		 * SMUSH-1088?focusedCommentId=92914.
+		 */
+		if ( $del_file && 'conversion' === $o_type ) {
+			// We might need to backup the full size file, will delete it later if we don't need to use it for backup.
+			if ( 'full' !== $size_k ) {
+				/**
+				 * We only need to keep the original file as a backup file.
+				 * and try to delete this file on cloud too, e.g S3.
+				 */
+				Helper::delete_permanently( $o_file, $id );
+			}
 		}
 
 		return $meta;
@@ -325,6 +406,7 @@ class Png2jpg extends Abstract_Module {
 		if ( $n_file_size >= $o_file_size ) {
 			// Delete the JPG image and return.
 			@unlink( $n_file );
+			Helper::logger()->png2jpg()->notice( sprintf( 'The new file [%s](%s) is larger than the original file [%s](%s).', Helper::clean_file_path( $n_file ), size_format( $n_file_size ), Helper::clean_file_path( $file ), size_format( $o_file_size ) ) );
 
 			return $result;
 		}
@@ -369,7 +451,8 @@ class Png2jpg extends Abstract_Module {
 		}
 
 		// If any of the values is not set.
-		if ( empty( $id ) || empty( $file ) || empty( $meta ) ) {
+		if ( empty( $id ) || empty( $file ) || empty( $meta ) || ! file_exists( $file ) ) {
+			Helper::logger()->png2jpg()->info( sprintf( 'Meta file [%s(%d)] is empty or file not found.', Helper::clean_file_path( $file ), $id ) );
 			return $result;
 		}
 
@@ -377,6 +460,7 @@ class Png2jpg extends Abstract_Module {
 
 		if ( is_wp_error( $editor ) ) {
 			// Use custom method maybe.
+			Helper::logger()->png2jpg()->error( sprintf( 'Image Editor cannot load file [%s(%d)]: %s.', Helper::clean_file_path( $file ), $id, $editor->get_error_message() ) );
 			return $result;
 		}
 
@@ -384,9 +468,32 @@ class Png2jpg extends Abstract_Module {
 
 		if ( ! empty( $n_file['filename'] ) && $n_file['dirname'] ) {
 			// Get a unique File name.
-			$n_file['filename'] = wp_unique_filename( $n_file['dirname'], $n_file['filename'] . '.jpg' );
-			$n_file             = path_join( $n_file['dirname'], $n_file['filename'] );
+			if ( $file_detail = Helper::cache_get( $id, 'convert_to_jpg' ) ) {// phpcs:ignore
+				list( $old_main_filename, $new_main_filename ) = $file_detail;
+				/**
+				 * Thumbnail name.
+				 * E.g.
+				 * test-150x150.jpg
+				 * test-1-150x150.jpg
+				 */
+				if ( $old_main_filename !== $new_main_filename ) {
+					$n_file['filename'] = str_replace( $old_main_filename, $new_main_filename, $n_file['filename'] );
+				}
+				$n_file['filename'] .= '.jpg';
+			} else {
+				$org_filename = $n_file['filename'];
+				/**
+				 * Get unique file name for the main file.
+				 * E.g.
+				 * test.png => test.jpg
+				 * test.png => test-1.jpg
+				 */
+				$n_file['filename'] = wp_unique_filename( $n_file['dirname'], $org_filename . '.jpg' );
+				Helper::cache_set( $id, array( $org_filename, pathinfo( $n_file['filename'], PATHINFO_FILENAME ) ), 'convert_to_jpg' );
+			}
+			$n_file = path_join( $n_file['dirname'], $n_file['filename'] );
 		} else {
+			Helper::logger()->png2jpg()->error( sprintf( 'Cannot retrieve the path info of file [%s(%d)].', Helper::clean_file_path( $file ), $id ) );
 			return $result;
 		}
 
@@ -433,11 +540,11 @@ class Png2jpg extends Abstract_Module {
 	 */
 	public function png_to_jpg( $id = '', $meta = '' ) {
 		// If we don't have meta or ID, or if not a premium user.
-		if ( empty( $id ) || empty( $meta ) || ! WP_Smush::is_pro() ) {
+		if ( empty( $id ) || empty( $meta ) || ! $this->is_active() || ! Helper::is_smushable( $id ) ) {
 			return $meta;
 		}
 
-		$file = Helper::get_attached_file( $id );
+		$file = Helper::get_attached_file( $id );// S3+.
 
 		// Whether to convert to jpg or not.
 		$should_convert = $this->can_be_converted( $id, 'full', '', $file );
@@ -448,19 +555,40 @@ class Png2jpg extends Abstract_Module {
 
 		$result['meta'] = $meta;
 
-		if ( ! $this->is_transparent ) {
-			// Perform the conversion, and update path.
-			$result = $this->convert_to_jpg( $id, $file, $result['meta'] );
-		}
+		/**
+		 * Allow to force convert the PNG to JPG via filter wp_smush_convert_to_jpg.
+		 *
+		 * @since 3.9.6
+		 * @see self::can_be_converted()
+		 */
+		// Perform the conversion, and update path.
+		$result = $this->convert_to_jpg( $id, $file, $result['meta'] );
 
 		$savings['full'] = ! empty( $result['savings'] ) ? $result['savings'] : '';
 
 		// If original image was converted and other sizes are there for the image, Convert all other image sizes.
 		if ( $result['converted'] ) {
 			if ( ! empty( $meta['sizes'] ) ) {
+				$converted_thumbs = array();
 				foreach ( $meta['sizes'] as $size_k => $data ) {
+					// Some thumbnail sizes are using the same image path, so check if the thumbnail file is converted.
+					if ( isset( $converted_thumbs[ $data['file'] ] ) ) {
+						// Update converted thumbnail size.
+						$result['meta']['sizes'][ $size_k ]['file']      = $result['meta']['sizes'][ $converted_thumbs[ $data['file'] ] ]['file'];
+						$result['meta']['sizes'][ $size_k ]['mime-type'] = $result['meta']['sizes'][ $converted_thumbs[ $data['file'] ] ]['mime-type'];
+						continue;
+					}
 					$s_file = path_join( dirname( $file ), $data['file'] );
 
+					/**
+					 * Check if the file exists on the server,
+					 * if not, might try to download it from the cloud (s3).
+					 *
+					 * @since 3.9.6
+					 */
+					if ( ! Helper::exists_or_downloaded( $s_file, $id ) ) {
+						continue;
+					}
 					/**
 					 * Since these sizes are derived from the main png file,
 					 * We can safely perform the conversion.
@@ -469,22 +597,56 @@ class Png2jpg extends Abstract_Module {
 
 					if ( ! empty( $result['savings'] ) ) {
 						$savings[ $size_k ] = $result['savings'];
+						/**
+						 * Save converted thumbnail file, allow to try to convert the thumbnail to PNG again if it was failed.
+						 */
+						$converted_thumbs[ $data['file'] ] = $size_k;
 					}
 				}
 			}
 
-			// Save the original File URL.
-			$o_file = ! empty( $file ) ? $file : get_post_meta( $id, '_wp_attached_file', true );
+			$mod = WP_Smush::get_instance()->core()->mod;
 
-			WP_Smush::get_instance()->core()->mod->backup->add_to_image_backup_sizes( $id, $o_file, 'smush_png_path' );
+			// Save the original File URL.
+			/**
+			 * Filter: wp_smush_png2jpg_enable_backup
+			 *
+			 * Whether to backup the PNG before converting it to JPG or not
+			 *
+			 * It's safe when we try to backup the PNG file before converting it to JPG when disabled backup option.
+			 * But if exists the backup file, we can delete the PNG file to free up space.
+			 * Note, if enabling resize the image, the backup file is a file that has already been resized, not the original file.
+			 * Use this filter to disable this option:
+			 * add_filter('wp_smush_png2jpg_enable_backup', '__return_false' );
+			 */
+			if ( $mod->backup->is_active() || apply_filters( 'wp_smush_png2jpg_enable_backup', ! $mod->backup->is_active(), $id, $file ) ) {
+				if ( ! $mod->backup->maybe_backup_image( $id, $file ) ) {
+					/**
+					 * Delete the original file if the backup file exists.
+					 *
+					 * Note, we use size key smush-png2jpg-full for PNG2JPG file to support S3 private media,
+					 * to remove converted JPG file after restoring in private folder.
+					 *
+					 * @see Smush\Core\Integrations\S3::get_object_key()
+					 */
+					Helper::delete_permanently( array( 'smush-png2jpg-full' => $file ), $id );// S3+.
+				}
+			}
 
 			// Remove webp images created from the png version, if any.
-			WP_Smush::get_instance()->core()->mod->webp->delete_images( $id, true, $o_file );
+			$mod->webp->delete_images( $id, true, $file );
 
 			/**
 			 * Do action, if the PNG to JPG conversion was successful
 			 */
 			do_action( 'wp_smush_png_jpg_converted', $id, $meta, $savings );
+
+			/**
+			 * The file converted to JPG,
+			 * we can clear the temp cache related to this converting.
+			 */
+			Helper::cache_delete( 'png2jpg_can_be_converted' );
+			Helper::cache_delete( 'convert_to_jpg' );
 		}
 
 		// Update the Final Stats.
@@ -508,6 +670,8 @@ class Png2jpg extends Abstract_Module {
 
 		if ( ! is_wp_error( $editor ) ) {
 			$quality = $editor->get_quality();
+		} else {
+			Helper::logger()->png2jpg()->error( sprintf( 'Image Editor cannot load image [%s].', Helper::clean_file_path( $file ) ) );
 		}
 
 		// Choose the default quality if we didn't get it.
@@ -524,23 +688,27 @@ class Png2jpg extends Abstract_Module {
 	 *
 	 * @param int $id  Attachment ID.
 	 *
-	 * @return bool  If the image was converted from PNG or not.
+	 * @since 3.9.6 Use this function to check if an image is converted from PNG to JPG.
+	 * @see Backup::get_backup_file() To check the backup file.
+	 *
+	 * @return int|false False if the image id is empty.
+	 * 0 Not yet converted, -1 Tried to convert but it failed or not saving, 1 Convert successfully.
 	 */
 	public function is_converted( $id ) {
 		if ( empty( $id ) ) {
 			return false;
 		}
 
-		// Get the original file path and check if it exists.
-		$original_file = get_post_meta( $id, 'wp-smush-original_file', true );
-
-		// If original file path is not stored, then it wasn't converted or was restored to original.
-		if ( empty( $original_file ) ) {
-			return false;
+		$savings = get_post_meta( $id, 'wp-smush-pngjpg_savings', true );
+		$is_converted = 0;
+		if ( ! empty( $savings ) ) {
+			$is_converted = -1;// The image was tried to convert to JPG but it failed or larger than the original file.
+			if ( ! empty( $savings['full'] ) ) {
+				$is_converted = 1;// The image was converted to JPG successfully.
+			}
 		}
 
-		$uploads = wp_get_upload_dir();
-		return file_exists( path_join( $uploads['basedir'], $original_file ) );
+		return $is_converted;
 	}
 
 	/**
@@ -570,16 +738,17 @@ class Png2jpg extends Abstract_Module {
 		$rows = $wpdb->get_results( $query, ARRAY_A );
 
 		if ( empty( $rows ) || ! is_array( $rows ) ) {
-			return;
+			return true;
 		}
 
 		// Iterate over rows to update post content.
+		$total = count( $rows );
 		foreach ( $rows as $row ) {
 			// replace old URLs with new URLs.
 			$post_content = $row['post_content'];
 			$post_content = str_replace( $o_url, $n_url, $post_content );
 			// Update Post content.
-			$wpdb->update(
+			if ( $wpdb->update(
 				$wpdb->posts,
 				array(
 					'post_content' => $post_content,
@@ -587,9 +756,14 @@ class Png2jpg extends Abstract_Module {
 				array(
 					'ID' => $row['ID'],
 				)
-			);
+			) ) {
+				$total --;
+			}
 			clean_post_cache( $row['ID'] );
 		}
+
+		// SMUSH-1088?focusedCommentId=92914.
+		return 0 === $total;
 	}
 
 }
