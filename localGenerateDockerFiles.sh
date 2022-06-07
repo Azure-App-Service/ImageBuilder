@@ -30,7 +30,7 @@ done
 
 artifactStagingDirectory="output/DockerFiles"
 baseImageName="${oryxBaseImageName:="mcr.microsoft.com/oryx"}" 
-baseImageVersion="${oryxTagName:="20220519.2"}" # change me as needed
+baseImageVersion="${oryxTagName:="20220603.1"}" # change me as needed
 appSvcGitUrl="https://github.com/Azure-App-Service"
 kuduliteBranch="${kuduliteBranch:="dev"}"
 configDir="Config"

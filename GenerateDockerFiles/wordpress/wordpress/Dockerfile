@@ -21,6 +21,9 @@ ENV UB_POST_MAX_SIZE 256M
 ENV UB_MAX_EXECUTION_TIME 120
 ENV UB_MAX_INPUT_TIME 120
 ENV UB_MAX_INPUT_VARS 10000
+# phpmyadmin
+ENV PHPMYADMIN_SOURCE "/usr/src/phpmyadmin"
+ENV PHPMYADMIN_HOME "/home/phpmyadmin"
 # redis
 ENV PHPREDIS_VERSION 5.3.4
 #Web Site Home
@@ -265,6 +268,10 @@ RUN set -ex \
 	&& apk add logrotate supervisor \	
 	# check log files once every minute, triaged by crond.
 	&& echo "*       *       *       *       *       sh /usr/local/bin/triage-rotate.sh" >> /etc/crontabs/root \
+# -------------
+# phpmyadmin
+# -------------
+    && mkdir -p $PHPMYADMIN_SOURCE \
 # ----------
 # ~. upgrade/clean up
 # ----------
@@ -343,7 +350,10 @@ COPY nginx_conf/nginx.conf /etc/nginx/nginx.conf
 COPY nginx_conf/wordpress-server.conf /etc/nginx/conf.d/default.conf
 COPY nginx_conf/spec-settings.conf /etc/nginx/conf.d/spec-settings.conf
 COPY nginx_conf/wordpress-server.conf /usr/src/nginx/wordpress-server.conf
+COPY nginx_conf/wordpress-phpmyadmin-server.conf /usr/src/nginx/wordpress-phpmyadmin-server.conf
 COPY nginx_conf/temp-server.conf /usr/src/nginx/temp-server.conf
+# phpmyadmin
+COPY phpmyadmin_src/. $PHPMYADMIN_SOURCE/
 # log rotater
 COPY logrotate.conf /etc/logrotate.conf
 RUN chmod 444 /etc/logrotate.conf

@@ -47,7 +47,7 @@ update_php_config() {
 }
 
 temp_server_start() {
-    mkdir -p /home/site/temp-root
+    test ! -d /home/site/temp-root && mkdir -p /home/site/temp-root
     cp -r /usr/src/temp-server/* /home/site/temp-root/
     cp /usr/src/nginx/temp-server.conf /etc/nginx/conf.d/default.conf
     local try_count=1
@@ -71,7 +71,19 @@ temp_server_start() {
 temp_server_stop() {
     #kill any existing nginx processes
     killall nginx 2> /dev/null 
-    rm -rf /home/site/temp-root
+}
+
+setup_phpmyadmin() {
+    if [ ! $(grep "PHPMYADMIN_INSTALLED" $WORDPRESS_LOCK_FILE) ]; then
+        if [[ $SETUP_PHPMYADMIN ]] && [[ "$SETUP_PHPMYADMIN" == "true" || "$SETUP_PHPMYADMIN" == "TRUE" || "$SETUP_PHPMYADMIN" == "True" ]]; then
+            if mkdir -p $PHPMYADMIN_HOME \
+                && cp -R $PHPMYADMIN_SOURCE/phpmyadmin/* $PHPMYADMIN_HOME \
+                && cp $PHPMYADMIN_SOURCE/config.inc.php $PHPMYADMIN_HOME/config.inc.php \
+                && chmod 555 $PHPMYADMIN_HOME/config.inc.php; then
+                echo "PHPMYADMIN_INSTALLED" >> $WORDPRESS_LOCK_FILE
+            fi
+        fi
+    fi
 }
 
 translate_welcome_content() {
@@ -118,6 +130,8 @@ setup_wordpress() {
         IS_TEMP_SERVER_STARTED="True"
         temp_server_start
     fi
+
+    setup_phpmyadmin
 
     if [ $(grep "GIT_PULL_COMPLETED" $WORDPRESS_LOCK_FILE) ] &&  [ ! $(grep "WORDPRESS_PULL_COMPLETED" $WORDPRESS_LOCK_FILE) ]; then
         echo "WORDPRESS_PULL_COMPLETED" >> $WORDPRESS_LOCK_FILE
@@ -365,8 +379,13 @@ if [ "$IS_TEMP_SERVER_STARTED" == "True" ]; then
     #stop temporary server
     temp_server_stop
 fi
+
 #ensure correct default.conf before starting WordPress server
-cp /usr/src/nginx/wordpress-server.conf /etc/nginx/conf.d/default.conf
+if [[ $SETUP_PHPMYADMIN ]] && [[ "$SETUP_PHPMYADMIN" == "true" || "$SETUP_PHPMYADMIN" == "TRUE" || "$SETUP_PHPMYADMIN" == "True" ]]; then
+    cp /usr/src/nginx/wordpress-phpmyadmin-server.conf /etc/nginx/conf.d/default.conf
+else
+    cp /usr/src/nginx/wordpress-server.conf /etc/nginx/conf.d/default.conf
+fi
 
 cd /usr/bin/
 supervisord -c /etc/supervisord.conf
