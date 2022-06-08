@@ -40,6 +40,8 @@ steps:
   inputs:
     scriptPath: ./BuildAndTagImages/build.sh
     args: $(Build.ArtifactStagingDirectory)/drop appsvctest $(System.DefaultWorkingDirectory)/Config $(Build.BuildNumber) ${{ parameters.stackName }} $(Build.Reason) ${{ parameters.filesRootPath }} ${{ parameters.imgTag }} ${{ parameters.stackVersion }}
+  env:
+    DIAGNOSTICSERVER_NUGETTOKEN: $(DiagnosticServer_NugetToken)
 
 # Publish Build Artifacts
 # Publish build artifacts to Azure Pipelines/TFS or a file share
