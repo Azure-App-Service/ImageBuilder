@@ -136,7 +136,7 @@ function buildDockerImage()
 
         displayInformationRegardingImageToBeBuilt $BuildVerRepoTag $appSvcDockerfilePath
         echo docker build -t "$BuildVerRepoTag" -f "$appSvcDockerfilePath" .
-        docker build --build-arg PAT=$(DiagnosticServer_NugetToken) -t "$BuildVerRepoTag" -f "$appSvcDockerfilePath" .
+        docker build --build-arg PAT=$(DIAGNOSTICSERVER_NUGETTOKEN) -t "$BuildVerRepoTag" -f "$appSvcDockerfilePath" .
         docker tag $BuildVerRepoTag $MCRRepoTag
 
         # only push the images if merging to the main branch
