@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="/home/vsts/work/1/a/drop/drop/*builtImageList">
+    <Content Include="/home/vsts/work/1/a/drop/*builtImageList">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

@@ -40,20 +40,11 @@ steps:
   inputs:
     scriptPath: ./BuildAndTagImages/build.sh
     args: $(Build.ArtifactStagingDirectory)/drop appsvctest $(System.DefaultWorkingDirectory)/Config $(Build.BuildNumber) ${{ parameters.stackName }} $(Build.Reason) ${{ parameters.filesRootPath }} ${{ parameters.imgTag }} ${{ parameters.stackVersion }}
-
-# Publish Build Artifacts
-# Publish build artifacts to Azure Pipelines/TFS or a file share
-- task: PublishBuildArtifacts@1
-  inputs:
-    pathtoPublish: '$(Build.ArtifactStagingDirectory)' 
-
-- task: DownloadBuildArtifacts@0
-  displayName: 'Download Build Artifacts'
-  inputs:
-    artifactName: drop
+  env:
+    DIAGNOSTICSERVER_NUGETTOKEN: $(DiagnosticServer_NugetToken)
 
 - task: ShellScript@2
   displayName: 'Run unit tests'
   inputs:
     scriptPath: ./localRunTests.sh
-    args: ${{ parameters.stackName }} $(Build.ArtifactStagingDirectory)
+    args: ${{ parameters.stackName }} $(Build.ArtifactStagingDirectory)/drop
