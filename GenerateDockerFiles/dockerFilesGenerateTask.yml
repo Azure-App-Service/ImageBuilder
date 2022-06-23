@@ -2,7 +2,7 @@ parameters:
   ascName: WAWS_Container_Images
   acrName: wawsimages.azurecr.io
   baseImageName: "mcr.microsoft.com/oryx"
-  baseImageVersion: "20220616.1"
+  baseImageVersion: "20220609.1"
   appSvcGitUrl: "https://github.com/Azure-App-Service"
   kuduliteInternalRepo: $(KUDU_REPO)
   DiagnosticServerInternalRepo: $(DiagnosticServer_REPO)
@@ -29,12 +29,12 @@ steps:
     azureSubscriptionEndpoint: ${{ parameters.ascName }}
     azureContainerRegistry: ${{ parameters.acrName }}
 
-- task: ShellScript@2
-  displayName: 'Generate Go Docker Files'
-  condition: or(eq( '${{ parameters.stack }}' , ''), eq( '${{ parameters.stack }}' ,'go'))
-  inputs:
-    scriptPath: ./GenerateDockerFiles/go/generateDockerfiles.sh
-    args: $(Build.ArtifactStagingDirectory) ${{ parameters.baseImageName }} ${{ parameters.baseImageVersion }} ${{ parameters.appSvcGitUrl }} $(System.DefaultWorkingDirectory)/Config
+# - task: ShellScript@2
+#   displayName: 'Generate Go Docker Files'
+#   condition: or(eq( '${{ parameters.stack }}' , ''), eq( '${{ parameters.stack }}' ,'go'))
+#   inputs:
+#     scriptPath: ./GenerateDockerFiles/go/generateDockerfiles.sh
+#     args: $(Build.ArtifactStagingDirectory) ${{ parameters.baseImageName }} ${{ parameters.baseImageVersion }} ${{ parameters.appSvcGitUrl }} $(System.DefaultWorkingDirectory)/Config
 
 - task: ShellScript@2
   displayName: 'Generate Node Docker Files'
@@ -64,47 +64,47 @@ steps:
     scriptPath: ./GenerateDockerFiles/php/generateDockerfiles.sh
     args: $(Build.ArtifactStagingDirectory) ${{ parameters.baseImageName }} ${{ parameters.baseImageVersion }} ${{ parameters.appSvcGitUrl }} $(System.DefaultWorkingDirectory)/Config
 
-- task: ShellScript@2
-  displayName: 'Generate PHP Xdebug Docker Files'
-  condition: or(eq('${{ parameters.stack }}', ''), eq('${{ parameters.stack }}','php-xdebug'))
-  inputs:
-    scriptPath: ./GenerateDockerFiles/php-xdebug/generateDockerfiles.sh
-    args: $(Build.ArtifactStagingDirectory) mcr.microsoft.com/appsvc $(Build.BuildNumber) ${{ parameters.appSvcGitUrl }} $(System.DefaultWorkingDirectory)/Config
+# - task: ShellScript@2
+#   displayName: 'Generate PHP Xdebug Docker Files'
+#   condition: or(eq('${{ parameters.stack }}', ''), eq('${{ parameters.stack }}','php-xdebug'))
+#   inputs:
+#     scriptPath: ./GenerateDockerFiles/php-xdebug/generateDockerfiles.sh
+#     args: $(Build.ArtifactStagingDirectory) mcr.microsoft.com/appsvc $(Build.BuildNumber) ${{ parameters.appSvcGitUrl }} $(System.DefaultWorkingDirectory)/Config
 
-- task: ShellScript@2
-  displayName: 'Generate Ruby Docker Files'
-  condition: or(eq('${{ parameters.stack }}', ''), eq('${{ parameters.stack }}','ruby'))
-  inputs:
-    scriptPath: ./GenerateDockerFiles/ruby/generateDockerfiles.sh
-    args: $(Build.ArtifactStagingDirectory) ${{ parameters.appSvcGitUrl }} $(System.DefaultWorkingDirectory)/Config
+# - task: ShellScript@2
+#   displayName: 'Generate Ruby Docker Files'
+#   condition: or(eq('${{ parameters.stack }}', ''), eq('${{ parameters.stack }}','ruby'))
+#   inputs:
+#     scriptPath: ./GenerateDockerFiles/ruby/generateDockerfiles.sh
+#     args: $(Build.ArtifactStagingDirectory) ${{ parameters.appSvcGitUrl }} $(System.DefaultWorkingDirectory)/Config
 
-- task: ShellScript@2
-  displayName: 'Generate Wordpress Docker Files'
-  condition: or(eq('${{ parameters.stack }}', ''), eq('${{ parameters.stack }}','wordpress'))
-  inputs:
-    scriptPath: ./GenerateDockerFiles/wordpress/generateDockerfiles.sh
-    args: $(Build.ArtifactStagingDirectory) $(System.DefaultWorkingDirectory)/Config
+# - task: ShellScript@2
+#   displayName: 'Generate Wordpress Docker Files'
+#   condition: or(eq('${{ parameters.stack }}', ''), eq('${{ parameters.stack }}','wordpress'))
+#   inputs:
+#     scriptPath: ./GenerateDockerFiles/wordpress/generateDockerfiles.sh
+#     args: $(Build.ArtifactStagingDirectory) $(System.DefaultWorkingDirectory)/Config
 
-- task: ShellScript@2
-  displayName: 'Generate KuduLite Docker Files'
-  condition: or(eq('${{ parameters.stack }}', ''), eq('${{ parameters.stack }}','kudulite'))
-  inputs:
-    scriptPath: ./GenerateDockerFiles/KuduLite/generateDockerfiles.sh
-    args: $(Build.ArtifactStagingDirectory) ${{ parameters.baseImageName }} ${{ parameters.baseImageVersion }} ${{ parameters.kuduliteInternalRepo }} $(System.DefaultWorkingDirectory)/Config ${{ parameters.kuduliteBranch }}
+# - task: ShellScript@2
+#   displayName: 'Generate KuduLite Docker Files'
+#   condition: or(eq('${{ parameters.stack }}', ''), eq('${{ parameters.stack }}','kudulite'))
+#   inputs:
+#     scriptPath: ./GenerateDockerFiles/KuduLite/generateDockerfiles.sh
+#     args: $(Build.ArtifactStagingDirectory) ${{ parameters.baseImageName }} ${{ parameters.baseImageVersion }} ${{ parameters.kuduliteInternalRepo }} $(System.DefaultWorkingDirectory)/Config ${{ parameters.kuduliteBranch }}
 
-- task: ShellScript@2
-  displayName: 'Generate Static Site Docker Files'
-  condition: or(eq('${{ parameters.stack }}', ''), eq('${{ parameters.stack }}','static-site'))
-  inputs:
-    scriptPath: ./GenerateDockerFiles/staticsite/generateDockerfiles.sh
-    args: $(Build.ArtifactStagingDirectory) ${{ parameters.baseImageName }} ${{ parameters.baseImageVersion }} ${{ parameters.appSvcGitUrl }} $(System.DefaultWorkingDirectory)/Config
+# - task: ShellScript@2
+#   displayName: 'Generate Static Site Docker Files'
+#   condition: or(eq('${{ parameters.stack }}', ''), eq('${{ parameters.stack }}','static-site'))
+#   inputs:
+#     scriptPath: ./GenerateDockerFiles/staticsite/generateDockerfiles.sh
+#     args: $(Build.ArtifactStagingDirectory) ${{ parameters.baseImageName }} ${{ parameters.baseImageVersion }} ${{ parameters.appSvcGitUrl }} $(System.DefaultWorkingDirectory)/Config
 
-- task: ShellScript@2
-  condition: or(eq('${{ parameters.stack }}', ''), eq('${{ parameters.stack }}','diagnostic-server'))
-  displayName: 'Generate DiagnosticServer Docker Files'
-  inputs:
-    scriptPath: ./GenerateDockerFiles/DiagnosticServer/generateDockerfiles.sh
-    args: $(Build.ArtifactStagingDirectory) ${{ parameters.DiagnosticServerInternalRepo }} $(System.DefaultWorkingDirectory)/Config
+# - task: ShellScript@2
+#   condition: or(eq('${{ parameters.stack }}', ''), eq('${{ parameters.stack }}','diagnostic-server'))
+#   displayName: 'Generate DiagnosticServer Docker Files'
+#   inputs:
+#     scriptPath: ./GenerateDockerFiles/DiagnosticServer/generateDockerfiles.sh
+#     args: $(Build.ArtifactStagingDirectory) ${{ parameters.DiagnosticServerInternalRepo }} $(System.DefaultWorkingDirectory)/Config
 
 
     # Publish Build Artifacts

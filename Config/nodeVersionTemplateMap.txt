@@ -1,3 +1,2 @@
-12,12,pm2-template,12-lts|12.9
-14,14,node-template,14-lts
-16,16,node-template,16-lts|latest|lts
+14,14,node-template,14-bullseye
+16,16,node-template,16-bullseye
