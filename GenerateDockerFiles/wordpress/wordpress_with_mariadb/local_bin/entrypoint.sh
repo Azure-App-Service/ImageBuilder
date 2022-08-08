@@ -272,8 +272,14 @@ update_localdb_config(){
 
 setup_nginx() {
     test ! -d "$NGINX_LOG_DIR" && echo "INFO: Log folder for nginx/php not found. creating..." && mkdir -p "$NGINX_LOG_DIR"
-    test -d "/home/etc/nginx" && echo "/home/etc/nginx exists.." && ln -s /home/etc/nginx /etc/nginx && ln -sf /usr/lib/nginx/modules /home/etc/nginx/modules
+    test -d "/home/etc/nginx" && echo "/home/etc/nginx exists.." && rm -rf /etc/nginx && ln -s /home/etc/nginx /etc/nginx && ln -sf /usr/lib/nginx/modules /home/etc/nginx/modules
     test ! -d "/home/etc/nginx" && mkdir -p /home/etc && cp -R /etc/nginx /home/etc/ && rm -rf /etc/nginx && ln -s /home/etc/nginx /etc/nginx && ln -sf /usr/lib/nginx/modules /home/etc/nginx/modules
+}
+
+setup_and_run_startup_script() {
+    test ! -d "/home/dev" && echo "INFO: /home/dev not found. Creating..." && mkdir -p /home/dev
+    touch /home/dev/startup.sh
+    bash /home/dev/startup.sh
 }
 
 setup_wordpress_lock() {
@@ -290,7 +296,7 @@ setup_wordpress_lock() {
 }
 
 temp_server_start() {
-    test ! -d /home/site/temp-root && mkdir -p /home/site/temp-root
+    mkdir -p /home/site/temp-root
     cp -r /usr/src/temp-server/* /home/site/temp-root/
     cp /usr/src/nginx/temp-server.conf /etc/nginx/conf.d/default.conf
     local try_count=1
@@ -309,16 +315,24 @@ temp_server_start() {
         fi
         let try_count+=1 
     done
+    
+    #ensure correct default.conf
+    cp /usr/src/nginx/wordpress-server.conf /etc/nginx/conf.d/default.conf
 }
 
 temp_server_stop() {
     #kill any existing nginx processes
     killall nginx 2> /dev/null 
+    rm -rf /home/site/temp-root
 }
 
 echo "Setup openrc ..." && openrc && touch /run/openrc/softlevel
 
+#moving /etc/nginx to /home/etc/nginx
+#/home directory is mounted to persistent storage
+#This enables custom configuration of nginx
 setup_nginx
+
 setup_wordpress_lock
 
 #Start temporary server with static webpage until wordpress is installed
@@ -451,6 +465,9 @@ chown nginx:nginx /run/php/php-fpm.sock
 chmod 777 /run/php/php-fpm.sock
 
 sed -i "s/SSH_PORT/$SSH_PORT/g" /etc/ssh/sshd_config
+
+setup_and_run_startup_script
+
 echo "Starting SSH ..."
 echo "Starting php-fpm ..."
 echo "Starting Nginx ..."
@@ -459,8 +476,6 @@ if [ "$IS_TEMP_SERVER_STARTED" == "True" ]; then
     #stop temporary server
     temp_server_stop
 fi
-#ensure correct default.conf before starting/reloading WordPress server
-cp /usr/src/nginx/wordpress-server.conf /etc/nginx/conf.d/default.conf
 
 cd /usr/bin/
 supervisord -c /etc/supervisord.conf

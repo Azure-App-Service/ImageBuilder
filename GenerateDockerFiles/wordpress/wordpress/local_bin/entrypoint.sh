@@ -66,6 +66,13 @@ temp_server_start() {
         fi
         let try_count+=1 
     done
+    
+    #ensure correct default.conf before starting WordPress server
+    if [[ $SETUP_PHPMYADMIN ]] && [[ "$SETUP_PHPMYADMIN" == "true" || "$SETUP_PHPMYADMIN" == "TRUE" || "$SETUP_PHPMYADMIN" == "True" ]]; then
+        cp /usr/src/nginx/wordpress-phpmyadmin-server.conf /etc/nginx/conf.d/default.conf
+    else
+        cp /usr/src/nginx/wordpress-server.conf /etc/nginx/conf.d/default.conf
+    fi
 }
 
 temp_server_stop() {
@@ -275,10 +282,21 @@ setup_wordpress() {
 
 setup_nginx() {
     test ! -d "$NGINX_LOG_DIR" && echo "INFO: Log folder for nginx/php not found. creating..." && mkdir -p "$NGINX_LOG_DIR"
+    test -d "/home/etc/nginx" && echo "/home/etc/nginx exists.." && rm -rf /etc/nginx && ln -s /home/etc/nginx /etc/nginx && ln -sf /usr/lib/nginx/modules /home/etc/nginx/modules
+    test ! -d "/home/etc/nginx" && mkdir -p /home/etc && cp -R /etc/nginx /home/etc/ && rm -rf /etc/nginx && ln -s /home/etc/nginx /etc/nginx && ln -sf /usr/lib/nginx/modules /home/etc/nginx/modules
+}
+
+setup_and_run_startup_script() {
+    test ! -d "/home/dev" && echo "INFO: /home/dev not found. Creating..." && mkdir -p /home/dev
+    touch /home/dev/startup.sh
+    bash /home/dev/startup.sh
 }
 
 echo "Setup openrc ..." && openrc && touch /run/openrc/softlevel
 
+#moving /etc/nginx to /home/etc/nginx
+#/home directory is mounted to persistent storage
+#This enables custom configuration of nginx
 setup_nginx
 
 if ! [[ $SKIP_WP_INSTALLATION ]] || ! [[ "$SKIP_WP_INSTALLATION" == "true" 
@@ -371,6 +389,9 @@ chown nginx:nginx /run/php/php-fpm.sock
 chmod 777 /run/php/php-fpm.sock
 
 sed -i "s/SSH_PORT/$SSH_PORT/g" /etc/ssh/sshd_config
+
+setup_and_run_startup_script
+
 echo "Starting SSH ..."
 echo "Starting php-fpm ..."
 echo "Starting Nginx ..."
@@ -378,13 +399,6 @@ echo "Starting Nginx ..."
 if [ "$IS_TEMP_SERVER_STARTED" == "True" ]; then
     #stop temporary server
     temp_server_stop
-fi
-
-#ensure correct default.conf before starting WordPress server
-if [[ $SETUP_PHPMYADMIN ]] && [[ "$SETUP_PHPMYADMIN" == "true" || "$SETUP_PHPMYADMIN" == "TRUE" || "$SETUP_PHPMYADMIN" == "True" ]]; then
-    cp /usr/src/nginx/wordpress-phpmyadmin-server.conf /etc/nginx/conf.d/default.conf
-else
-    cp /usr/src/nginx/wordpress-server.conf /etc/nginx/conf.d/default.conf
 fi
 
 cd /usr/bin/
