@@ -246,6 +246,38 @@ setup_wordpress() {
         fi
     fi
 
+    if [ $(grep "W3TC_PLUGIN_INSTALLED" $WORDPRESS_LOCK_FILE) ] && [ ! $(grep "W3TC_PLUGIN_CONFIG_UPDATED" $WORDPRESS_LOCK_FILE) ]; then
+        if mkdir -p $WORDPRESS_HOME/wp-content/cache/tmp \
+        && mkdir -p $WORDPRESS_HOME/wp-content/w3tc-config \
+        && wp w3-total-cache import $WORDPRESS_SOURCE/w3tc-config.json --path=$WORDPRESS_HOME --allow-root; then
+            echo "W3TC_PLUGIN_CONFIG_UPDATED" >> $WORDPRESS_LOCK_FILE
+        fi
+    fi	
+
+# IF MIGRATION_TRIGGER SET TO TRUE THEN THE DATABASE WILL BE MIGRATED
+
+    if [ $(grep "WP_INSTALLATION_COMPLETED" $WORDPRESS_LOCK_FILE) ] && [ ! $(grep "WORDPRESS_DATABASE_RESTORED" $WORDPRESS_LOCK_FILE) ]; then
+        if [[ $MIGRATION_TRIGGER ]] && [[ "$MIGRATION_TRIGGER" == "true" || "$MIGRATION_TRIGGER" == "TRUE" || "$MIGRATION_TRIGGER" == "True" ]]; then
+            if apk add mysql-client; then
+                echo "MYSQL_CLIENT_INSTALLED" >> $WORDPRESS_LOCK_FILE
+# Migrated database is uploaded by the WordPress Migration plugin onto Azure Blob Storage and downloaded here. 
+# Uncomment and change source for new database - wpmigrateddb to /home/site/wwwroot/database.sql 
+# This is applicable only if we are not using SSH access to update the database
+#                wget "https://wpsqlstorage.blob.core.windows.net/wpsql/database.sql" -O "/home/site/wwwroot/database.sql"
+#                echo "DATABASE_IMPORTED" >> $WORDPRESS_LOCK_FILE
+            fi
+        fi
+        if [ $(grep "MYSQL_CLIENT_INSTALLED" $WORDPRESS_LOCK_FILE) ]; then
+            echo "Restoring WordPress database" >> $WORDPRESS_LOCK_FILE
+            if mysql --host=$DATABASE_HOST --user=$DATABASE_USERNAME --password=$DATABASE_PASSWORD --ssl=true -e "create database wpmigrateddb character set utf8 collate utf8_unicode_ci;" \
+                && mysql --host=$DATABASE_HOST --user=$DATABASE_USERNAME --password=$DATABASE_PASSWORD --ssl=true wpmigrateddb < $WORDPRESS_SOURCE/wpmigrateddb.sql; then
+                echo "WordPress database restored" >> $WORDPRESS_LOCK_FILE
+            fi
+        fi
+    fi
+
+#MIGRATION-END
+
     if [  $(grep "WP_INSTALLATION_COMPLETED" $WORDPRESS_LOCK_FILE) ] &&  [ ! $(grep "WP_LANGUAGE_SETUP_COMPLETED" $WORDPRESS_LOCK_FILE) ] &&  [ ! $(grep "FIRST_TIME_SETUP_COMPLETED" $WORDPRESS_LOCK_FILE) ]; then
 	    if [[ $WORDPRESS_LOCALE_CODE ]] && [[ ! "$WORDPRESS_LOCALE_CODE" == "en_US"  ]]; then
             if wp language core install $WORDPRESS_LOCALE_CODE --path=$WORDPRESS_HOME --allow-root \
@@ -271,11 +303,6 @@ setup_wordpress() {
 	    echo "INFO: NOT in Azure, chown for "$WORDPRESS_HOME 
 	    chown -R nginx:nginx $WORDPRESS_HOME
     fi
-}
-
-setup_post_startup_script() {
-    test ! -d "/home/dev" && echo "INFO: /home/dev not found. Creating..." && mkdir -p /home/dev
-    touch /home/dev/startup.sh
 }
 
 setup_nginx() {
@@ -392,9 +419,5 @@ else
     cp /usr/src/nginx/wordpress-server.conf /etc/nginx/conf.d/default.conf
 fi
 
-setup_post_startup_script
-
 cd /usr/bin/
 supervisord -c /etc/supervisord.conf
-
-
