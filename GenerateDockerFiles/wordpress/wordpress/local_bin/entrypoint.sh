@@ -181,6 +181,12 @@ setup_wordpress() {
         fi
     fi
 
+    if [ ! $(grep "FIRST_TIME_SETUP_COMPLETED" $WORDPRESS_LOCK_FILE) ] && [ $(grep "WP_INSTALLATION_COMPLETED" $WORDPRESS_LOCK_FILE) ] && [ ! $(grep "INITIAL_THEME_UPDATED" $WORDPRESS_LOCK_FILE) ]; then
+        if wp theme install twentytwentyone --activate --allow-root; then
+             echo "INITIAL_THEME_UPDATED" >> $WORDPRESS_LOCK_FILE
+        fi
+    fi
+
     if [ $(grep "WP_INSTALLATION_COMPLETED" $WORDPRESS_LOCK_FILE) ] && [ ! $(grep "WP_CONFIG_UPDATED" $WORDPRESS_LOCK_FILE) ]; then
         if wp rewrite structure '/%year%/%monthnum%/%day%/%postname%/' --path=$WORDPRESS_HOME --allow-root \
         && wp option set rss_user_excerpt 1 --path=$WORDPRESS_HOME --allow-root \
