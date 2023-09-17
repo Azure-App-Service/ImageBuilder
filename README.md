@@ -13,7 +13,7 @@ tracker.
 [Azure App Service]: https://azure.microsoft.com/services/app-service/
 [Azure Updates]: https://azure.microsoft.com/updates
 
-The build container and runtime images share the '/home' directory. The [Build container](https://github.com/Azure-App-Service/KuduLite) provides a various methods to publish code. The published code is then built as an artifact depending upong the configured Framework and the Framework Version into 'home/site/wwwroot' directory. This built artifact is then consumed by the runtime images.
+The build container and runtime images share the '/home' directory. The [Build container](https://github.com/Azure-App-Service/KuduLite) provides a various methods to publish code. The published code is then built as an artifact depending upon the configured Framework and the Framework Version into 'home/site/wwwroot' directory. This built artifact is then consumed by the runtime images.
 
 # Supported platforms
 
