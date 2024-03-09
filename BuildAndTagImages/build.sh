@@ -76,12 +76,8 @@ function buildDockerImage()
                     fi
 
                     local TAG_MOD="${TAG}_${PIPELINE_BUILD_NUMBER}"
-                    if [[ $STACK = "wordpress" && ( $TAG = "latest"  ||  $TAG = "latest_7.4" ||  $TAG = "test" ||  $TAG = "8.0_stable" ||  $TAG = "8.2_test" ) ]]; then
+                    if [[ $STACK = "wordpress" && ( $TAG = "latest_7.4" ) ]]; then
                         TAG_MOD="${TAG}"
-                    fi
-
-                    if [[ $TAG_MOD = "8.0_stable" ]]; then
-                        TAG_MOD="8.0"
                     fi
 
                     # Build Image Tags are converted to lower case because docker doesn't accept upper case tags

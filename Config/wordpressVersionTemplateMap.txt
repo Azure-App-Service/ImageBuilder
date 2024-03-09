@@ -1,3 +1,1 @@
-7.4,7.4.24-fpm-alpine3.13,wordpress,7.4|latest_7.4
-8.0,8.0.30-fpm-alpine3.16,wordpress,test
-8.2,8.2.9-fpm-alpine3.18,wordpress,8.2_test
+7.4,7.4.24-fpm-alpine3.13,wordpress,latest_7.4
