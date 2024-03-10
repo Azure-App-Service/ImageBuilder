@@ -111,11 +111,11 @@ function buildDockerImage()
                         docker build -t "$BuildVerRepoTag" -f "$appSvcDockerfilePath" .
                     fi
 
-                    if [ "$BUILD_REASON" != "PullRequest" ] && [ "$STACK" == "wordpress" ]; then
-                        docker push $BuildVerRepoTag
-                        docker tag $BuildVerRepoTag $MCRRepoTag
-                        docker push $MCRRepoTag
-                    fi
+                    #if [ "$BUILD_REASON" != "PullRequest" ] && [ "$STACK" == "wordpress" ]; then
+                    #    docker push $BuildVerRepoTag
+                    #    docker tag $BuildVerRepoTag $MCRRepoTag
+                    #    docker push $MCRRepoTag
+                    #fi
 
                     echo $MCRRepoTag >> $SYSTEM_ARTIFACTS_DIR/${STACK}builtImageList
                 done
