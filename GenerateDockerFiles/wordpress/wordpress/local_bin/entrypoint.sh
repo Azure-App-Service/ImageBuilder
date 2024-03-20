@@ -85,6 +85,22 @@ temp_server_stop() {
     killall nginx 2> /dev/null 
 }
 
+phpmyadmin_version_check() {
+    version_line=$(grep -o "Version [0-9]\+\.[0-9]\+\.[0-9]\+" /$PHPMYADMIN_HOME/README)
+    version_number=$(echo "$version_line" | awk '{print $2}')
+    echo "$version_number"
+}
+
+get_php_version() {
+    php_version_output=$(php -v 2>&1)
+
+    # The pattern 'PHP X.Y.Z' is matched by grep, and awk is used to extract the version number (X.Y.Z)
+    php_version=$(echo "$php_version_output" | grep -o 'PHP [0-9]\+\.[0-9]\+\.[0-9]\+' | awk '{print $2}')
+
+    echo "$php_version"
+}
+#php -v min compatibility version in docker file (under if)
+
 setup_phpmyadmin() {
     if [ ! $(grep "PHPMYADMIN_INSTALLED" $WORDPRESS_LOCK_FILE) ]; then
         if [[ $SETUP_PHPMYADMIN ]] && [[ "$SETUP_PHPMYADMIN" == "true" || "$SETUP_PHPMYADMIN" == "TRUE" || "$SETUP_PHPMYADMIN" == "True" ]]; then
@@ -94,6 +110,24 @@ setup_phpmyadmin() {
                 && cp $PHPMYADMIN_SOURCE/config.inc.php $PHPMYADMIN_HOME/config.inc.php \
                 && chmod 555 $PHPMYADMIN_HOME/config.inc.php; then
                 echo "PHPMYADMIN_INSTALLED" >> $WORDPRESS_LOCK_FILE
+            fi
+        fi
+    else
+        CURRENT_VERSION=$(phpmyadmin_version_check)
+        if [ $CURRENT_VERSION != $PHPMYADMIN_LATEST_VERSION ]; then
+            CURRENT_PHP_VERSION=$(get_php_version)
+            if [[ "$(printf '%s\n' "$LOWEST_COMPATIBLE_PHP_VERSION" "$CURRENT_PHP_VERSION" | sort -V | head -n1)" == "$LOWEST_COMPATIBLE_PHP_VERSION" ]]; then
+                if [ -d $PHPMYADMIN_HOME ]; then
+                    rm -rf $PHPMYADMIN_HOME/*
+                fi
+                # Copy files from /usr/src/phpmyadmin to /home/phpmyadmin
+                if mkdir -p $PHPMYADMIN_HOME \
+                    && chmod -R 777 $PHPMYADMIN_HOME \
+                    && cp -R $PHPMYADMIN_SOURCE/phpmyadmin/* $PHPMYADMIN_HOME \
+                    && cp $PHPMYADMIN_SOURCE/config.inc.php $PHPMYADMIN_HOME/config.inc.php \
+                    && chmod 555 $PHPMYADMIN_HOME/config.inc.php; then
+                    echo "PHPMYADMIN_INSTALLED" >> $WORDPRESS_LOCK_FILE
+                fi
             fi
         fi
     fi
