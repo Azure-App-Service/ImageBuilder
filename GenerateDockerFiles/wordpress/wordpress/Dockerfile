@@ -302,7 +302,6 @@ RUN set -ex \
 # phpmyadmin
 # -------------
     && mkdir -p $PHPMYADMIN_SOURCE \
-# ----------
 # ~. upgrade/clean up
 # ----------
 	&& apk upgrade \
